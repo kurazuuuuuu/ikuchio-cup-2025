@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "backend/ikuchio-cup-2025"
+		},
+		{
+			"path": "frontend/ikuchio-cup-2025"
+		},
+		{
+			"path": "."
+		}
+	]
+}
