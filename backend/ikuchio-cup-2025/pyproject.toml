@@ -1,0 +1,13 @@
+[project]
+name = "ikuchio-cup-2025"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi[standard]>=0.116.1",
+    "google-cloud-secret-manager>=2.24.0",
+    "google-genai>=1.36.0",
+    "pytest>=8.4.2",
+    "ruff>=0.13.0",
+]
