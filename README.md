@@ -77,7 +77,7 @@ GET `/api/room/{ROOM_ID}` - ルームのメッセージ履歴取得
 ### スキーマ
 ### USER
 ```json
-user: {
+{
   device_id: "{DEVICE_ID}" // ユーザーのデバイスID、ログイン時に使用する
   created_at: {TIMEDATE}, // ユーザーの作成日時
   room_id: "room_{UUID}" // その日参加しているルームUUID
@@ -86,7 +86,7 @@ user: {
 
 ### ROOM
 ```json
-room: {
+{
   id: "room_{UUID}", // UUID4で生成
   created_at: {TIMEDATE}, // ルームが作成された日時
   users: [ // ルームに参加しているユーザーのUUID
@@ -97,7 +97,7 @@ room: {
 
 ### TURN
 ```json
-turn: {
+{
   id: "turn_{UUID}", // ターンごとのID
   room_id: "room_{UUID}", // どのルームでのやりとりか
   original_sender_id: "user_{DEVICE_ID}", // 元のメッセージを書いたユーザーID
@@ -109,7 +109,7 @@ turn: {
 ```
 ### AI_RESPONSE
 ```json
-ai_response: {
+{
   processed_text: "String"
 }
 ```
