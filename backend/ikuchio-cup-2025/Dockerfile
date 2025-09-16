@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 COPY src/ ./src/
 
 # Install dependencies directly with pip
-RUN pip install --no-cache-dir fastapi[standard] uvicorn google-cloud-firestore google-cloud-secret-manager google-genai
+RUN pip install --no-cache-dir fastapi[standard] uvicorn google-cloud-firestore google-cloud-secret-manager google-genai firebase-admin==6.5.0
 
 # Set environment variables
 ENV PORT=8000
