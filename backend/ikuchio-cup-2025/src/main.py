@@ -19,7 +19,11 @@ app.add_middleware(
 
 @app.get("/health")
 def health_check():
-    return {"message": "Hello!", "status": "ok"}
+    try:
+        # Secret Managerのテストはしない
+        return {"message": "Hello!", "status": "ok"}
+    except Exception as e:
+        return {"message": f"Health check failed: {str(e)}", "status": "error"}
 
 @app.get("/api/health")
 def api_health_check():
@@ -79,4 +83,5 @@ if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 8000))
     print(f"Starting server on http://0.0.0.0:{port}")
-    uvicorn.run(app, host="0.0.0.0", port=port, reload=False, log_level="info")
+    print("Server starting...")
+    uvicorn.run(app, host="0.0.0.0", port=port, reload=False, log_level="info", timeout_keep_alive=30)

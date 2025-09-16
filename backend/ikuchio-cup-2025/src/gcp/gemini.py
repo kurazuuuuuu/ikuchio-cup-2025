@@ -5,12 +5,29 @@ import base64
 import os
 import datetime
 
-API_KEY = SecretManagerUtil().get_secret("88236233617", "google-vertexai-api-key")
+# API_KEYを遅延読み込みに変更
+API_KEY = None
+
+def get_api_key():
+    global API_KEY
+    if API_KEY is None:
+        try:
+            API_KEY = SecretManagerUtil().get_secret("88236233617", "google-vertexai-api-key")
+            print("[Gemini Debug] API key loaded successfully")
+        except Exception as e:
+            print(f"[Gemini Debug] Failed to load API key: {e}")
+            API_KEY = "fallback"
+    return API_KEY
 
 def generate(input_text):
+  api_key = get_api_key()
+  if api_key == "fallback":
+    print("[Gemini Debug] Using fallback - returning original text")
+    return input_text
+    
   client = genai.Client(
       vertexai=True,
-      api_key=API_KEY
+      api_key=api_key
   )
 
   si_text1 = """あなたは、送信側から提供された日本語の文章を処理し、個人を特定できる情報を伏せ、内容を具体的にして受信側が閲覧できるようにして閲覧側からメッセージに気軽に返せるようにテキストを処理するエキスパートです。以下の手順に従ってください。
