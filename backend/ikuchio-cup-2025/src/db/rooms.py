@@ -110,7 +110,11 @@ def firestore_reset_all_rooms():
     users_ref = db.collection("users")
     user_docs = users_ref.get()
     for user_doc in user_docs:
-        user_doc.reference.update({"room_id": None})
+        try:
+            user_doc.reference.update({"room_id": None})
+            print(f"Debug: Cleared room_id for user {user_doc.to_dict().get('fingerprint_id', 'unknown')[:8]}")
+        except Exception as e:
+            print(f"Debug: Failed to clear room_id: {e}")
     
     print(f"Debug: Found {len(user_docs)} users for room creation")
     
@@ -142,8 +146,12 @@ def firestore_reset_all_rooms():
             db.collection("rooms").document(room_id).set(room_data)
             
             # ユーザーにroom_idを割り当て
-            users_list[i].reference.update({"room_id": room_id})
-            users_list[i + 1].reference.update({"room_id": room_id})
+            try:
+                users_list[i].reference.update({"room_id": room_id})
+                users_list[i + 1].reference.update({"room_id": room_id})
+                print(f"Debug: Assigned room {room_id} to users {user1_id[:8]} and {user2_id[:8]}")
+            except Exception as e:
+                print(f"Debug: Failed to assign room_id: {e}")
             
             created_rooms.append(room_data)
             print(f"Debug: Created room {room_id} for users {user1_id[:8]} and {user2_id[:8]}")
