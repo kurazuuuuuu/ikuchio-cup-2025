@@ -112,6 +112,12 @@ def firestore_reset_all_rooms():
     for user_doc in user_docs:
         user_doc.reference.update({"room_id": None})
     
+    print(f"Debug: Found {len(user_docs)} users for room creation")
+    
+    # ユーザーが2人未満の場合はルームを作成しない
+    if len(user_docs) < 2:
+        return {"message": "Not enough users to create rooms", "created_rooms": 0}
+    
     # ユーザーをペアにしてルーム作成
     users_list = [doc for doc in user_docs]
     random.shuffle(users_list)
@@ -140,5 +146,6 @@ def firestore_reset_all_rooms():
             users_list[i + 1].reference.update({"room_id": room_id})
             
             created_rooms.append(room_data)
+            print(f"Debug: Created room {room_id} for users {user1_id[:8]} and {user2_id[:8]}")
     
     return {"message": "All rooms have been reset and new rooms created", "created_rooms": len(created_rooms)}
