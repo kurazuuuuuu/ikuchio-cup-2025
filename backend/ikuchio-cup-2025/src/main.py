@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
-from routers import users
+from routers import users, rooms
 
 app = FastAPI()
 
@@ -22,6 +22,7 @@ def health_check():
 
 
 app.include_router(users.users_router)
+app.include_router(rooms.rooms_router)
 
 if __name__ == "__main__":
     uvicorn.run("main:app", reload=True)
