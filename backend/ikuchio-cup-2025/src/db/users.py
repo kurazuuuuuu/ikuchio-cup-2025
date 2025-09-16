@@ -17,7 +17,7 @@ def firestore_create_user(fingerprint_id: str = "0000"):
     }
 
     db.collection("users").document().set(user_data)
-    print(f"Debug: Created new user {fingerprint_id[:8]} without room assignment")
+    print(f"Debug: Created new user user_{fingerprint_id} without room assignment")
     return user_data
 
 def firestore_get_user(fingerprint_id: str = "0000"):
@@ -28,8 +28,10 @@ def firestore_get_user(fingerprint_id: str = "0000"):
     if docs:
         user_doc = docs[0]
         user_data = user_doc.to_dict()
+        print(f"Debug: Retrieved user user_{fingerprint_id} with room_id: {user_data.get('room_id', 'None')}")
         return user_data
     else:
+        print(f"Debug: User user_{fingerprint_id} not found")
         return None
 
 def firestore_get_all_users():
