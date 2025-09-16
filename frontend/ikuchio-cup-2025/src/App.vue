@@ -1,49 +1,487 @@
-<script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue'
-import TheWelcome from './components/TheWelcome.vue'
-import Fingerprint from './components/Fingerprint.vue'
-</script>
-
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="./assets/logo.svg" width="125" height="125" />
-
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
+  <div id="app">
+    <div v-if="!user" class="login-screen">
+      <h1>24時間でさようなら</h1>
+      <button @click="login">入室する</button>
     </div>
-  </header>
-
-  <main>
-    <Fingerprint />
-    <TheWelcome />
-  </main>
+    
+    <div v-else class="chat-screen">
+      <div class="user-id">ユーザーID: {{ user.fingerprint_id }}</div>
+      
+      <!-- ルームが存在しない場合 -->
+      <div v-if="!roomId" class="no-room-screen">
+        <div class="no-room-message">
+          <h2>まだあなたの相手は見つかっていないようですよ...</h2>
+          <div class="reset-timer">
+            <p>リセットまでの時間: {{ timeLeft }}</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- ルームが存在する場合 -->
+      <div v-else>
+        <div class="header">
+          <h2>Room: {{ roomId }}</h2>
+          <div class="timer">{{ timeLeft }}</div>
+        </div>
+        
+        <div class="messages" ref="messagesContainer">
+          <div v-if="messages.length === 0" class="no-messages">
+            まだメッセージがありません。最初のメッセージを送ってみましょう！
+          </div>
+          <div v-for="message in messages" :key="message.id" 
+               :class="['message-wrapper', message.original_sender_id === user?.fingerprint_id ? 'own-message' : 'other-message']">
+            <div class="message-bubble">
+              <div class="message-content">{{ cleanMessageText(message.processed_text) }}</div>
+              <div class="message-time">{{ formatTime(message.created_at) }}</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="input-area">
+          <textarea 
+            v-model="newMessage" 
+            @keydown="handleKeydown"
+            placeholder="メッセージを入力..."
+            :disabled="sending"
+          ></textarea>
+          <button @click="sendMessage" :disabled="!newMessage.trim() || sending">
+            {{ sending ? '送信中...' : '送信' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { generateFingerprint } from './utils/fingerprint'
+
+interface Message {
+  id: string
+  processed_text: string
+  created_at: string
+}
+
+interface User {
+  fingerprint_id: string
+  room_id: string
+}
+
+const getApiBaseUrl = () => {
+  // 環境変数が設定されている場合はそれを使用
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL
+  }
+  
+  // フォールバック: 現在のホスト名を使用
+  const hostname = window.location.hostname
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:8000/api'
+  }
+  return `http://${hostname}:8000/api`
+}
+
+const API_BASE = getApiBaseUrl()
+
+const user = ref<User | null>(null)
+const roomId = ref<string>('')
+const messages = ref<Message[]>([])
+const newMessage = ref<string>('')
+const sending = ref<boolean>(false)
+const timeLeft = ref<string>('')
+const messagesContainer = ref<HTMLElement>()
+
+let timerInterval: number | null = null
+let websocket: WebSocket | null = null
+
+const login = async () => {
+  let fingerprint = ''
+  try {
+    fingerprint = generateFingerprint()
+    
+    if (!fingerprint || fingerprint.length < 8) {
+      alert(`フィンガープリントの生成に失敗しました。\n生成されたフィンガープリント: ${fingerprint}\nブラウザを更新して再度お試しください。`)
+      return
+    }
+    
+
+    
+    const response = await fetch(`${API_BASE}/users`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fingerprint_id: fingerprint }),
+      mode: 'cors'
+    })
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: '不明なエラー' }))
+      throw new Error(errorData.detail || `HTTP ${response.status}`)
+    }
+    
+    const userData = await response.json()
+    
+    if (!userData || !userData.fingerprint_id) {
+      throw new Error('ユーザーデータが無効です')
+    }
+    
+    user.value = userData
+    roomId.value = userData.room_id || ''
+    
+    if (userData.room_id) {
+      connectWebSocket()
+    }
+    startTimer()
+    
+  } catch (error) {
+    console.error('Login failed:', error)
+    let errorMessage = '不明なエラー'
+    
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      errorMessage = `サーバーに接続できません。${API_BASE}にアクセスできるか確認してください。`
+    } else if (error instanceof Error) {
+      errorMessage = error.message
+    }
+    
+    alert(`ログインに失敗しました: ${errorMessage}\n\nデバッグ情報:\nフィンガープリント: ${fingerprint}\nAPI URL: ${API_BASE}`)
+  }
+}
+
+const sendMessage = async () => {
+  if (!newMessage.value.trim() || sending.value || !user.value) return
+  
+  sending.value = true
+  try {
+    const response = await fetch(`${API_BASE}/room/${roomId.value}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        original_text: newMessage.value,
+        sender_id: user.value.fingerprint_id
+      })
+    })
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`)
+    }
+    
+    const messageText = newMessage.value
+    newMessage.value = ''
+    
+
+    
+    // WebSocketで通知
+    if (websocket && websocket.readyState === WebSocket.OPEN) {
+      const wsMessage = JSON.stringify({ type: 'message', text: messageText })
+      console.log('WebSocketメッセージ送信:', wsMessage)
+      websocket.send(wsMessage)
+    } else {
+      console.log('WebSocket接続が利用できません')
+    }
+    
+    await fetchMessages()
+  } catch (error) {
+    console.error('Send failed:', error)
+    alert('メッセージの送信に失敗しました')
+  } finally {
+    sending.value = false
+  }
+}
+
+const fetchMessages = async () => {
+  if (!roomId.value) return
+  
+  try {
+    const response = await fetch(`${API_BASE}/room/${roomId.value}`)
+    
+    if (response.ok) {
+      const data = await response.json()
+      messages.value = Array.isArray(data) ? data : []
+      await nextTick()
+      scrollToBottom()
+    }
+  } catch (error) {
+    // サイレントにエラーを処理
+  }
+}
+
+const connectWebSocket = () => {
+  if (!roomId.value) return
+  
+  // WebSocket URLを構築
+  const hostname = import.meta.env.VITE_API_BASE_URL ? 
+    import.meta.env.VITE_API_BASE_URL.replace('http://', '').replace('/api', '') :
+    window.location.hostname + ':8000'
+  const wsUrl = `ws://${hostname}/ws/${roomId.value}`
+  
+  console.log(`WebSocket接続試行: ${wsUrl}`)
+  console.log(`環境変数: ${import.meta.env.VITE_API_BASE_URL}`)
+  
+  websocket = new WebSocket(wsUrl)
+  
+  websocket.onopen = () => {
+    console.log('WebSocket接続成功')
+    fetchMessages()
+  }
+  
+  websocket.onmessage = (event) => {
+    console.log('WebSocketメッセージ受信:', event.data)
+    fetchMessages()
+  }
+  
+  websocket.onclose = (event) => {
+    console.log(`WebSocket接続終了: code=${event.code}, reason=${event.reason}`)
+    // 3秒後に再接続を試みる
+    setTimeout(() => {
+      if (roomId.value) {
+        console.log('再接続を試みます...')
+        connectWebSocket()
+      }
+    }, 3000)
+  }
+  
+  websocket.onerror = (error) => {
+    console.error('WebSocketエラー:', error)
+  }
+}
+
+const startTimer = () => {
+  updateTimer()
+  timerInterval = setInterval(updateTimer, 1000)
+}
+
+const updateTimer = () => {
+  const now = new Date()
+  const tomorrow = new Date(now)
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  tomorrow.setHours(0, 0, 0, 0)
+  
+  const diff = tomorrow.getTime() - now.getTime()
+  const hours = Math.floor(diff / (1000 * 60 * 60))
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+  
+  timeLeft.value = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+}
+
+const formatTime = (timestamp: string) => {
+  return new Date(timestamp).toLocaleTimeString('ja-JP', { 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  })
+}
+
+const cleanMessageText = (text: string) => {
+  // [ユーザーID]: の形式を除去
+  return text.replace(/^\[[^\]]+\]:\s*/, '')
+}
+
+const handleKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+    event.preventDefault()
+    sendMessage()
+  }
+}
+
+const scrollToBottom = () => {
+  if (messagesContainer.value) {
+    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+  }
+}
+
+onUnmounted(() => {
+  if (websocket) {
+    websocket.close()
+  }
+  if (timerInterval) clearInterval(timerInterval)
+})
+</script>
+
 <style scoped>
-header {
-  line-height: 1.5;
+#app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
+.login-screen {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  gap: 2rem;
 }
 
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
+.login-screen h1 {
+  font-size: 2rem;
+  margin: 0;
+}
 
-  .logo {
-    margin: 0 2rem 0 0;
-  }
+.login-screen button {
+  padding: 1rem 2rem;
+  font-size: 1.2rem;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
 
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
+.chat-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.user-id {
+  padding: 0.5rem 1rem;
+  background: #f8f9fa;
+  color: #999;
+  font-size: 0.8rem;
+  text-align: center;
+  border-bottom: 1px solid #eee;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #eee;
+  background: #f8f9fa;
+}
+
+.timer {
+  font-family: monospace;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.message-wrapper {
+  display: flex;
+  width: 100%;
+}
+
+.own-message {
+  justify-content: flex-end;
+}
+
+.other-message {
+  justify-content: flex-start;
+}
+
+.message-bubble {
+  max-width: 70%;
+  padding: 0.75rem 1rem;
+  border-radius: 18px;
+  word-wrap: break-word;
+}
+
+.own-message .message-bubble {
+  background: #007bff;
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.other-message .message-bubble {
+  background: #f1f3f4;
+  color: #333;
+  border-bottom-left-radius: 4px;
+}
+
+.message-content {
+  margin-bottom: 0.25rem;
+  line-height: 1.4;
+}
+
+.message-time {
+  font-size: 0.7rem;
+  opacity: 0.7;
+  text-align: right;
+}
+
+.other-message .message-time {
+  text-align: left;
+}
+
+.input-area {
+  display: flex;
+  padding: 1rem;
+  gap: 1rem;
+  border-top: 1px solid #eee;
+}
+
+.input-area textarea {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  resize: none;
+  min-height: 60px;
+}
+
+.input-area button {
+  padding: 0.5rem 1rem;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.input-area button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.no-messages {
+  text-align: center;
+  color: #999;
+  font-style: italic;
+  padding: 2rem;
+}
+
+.no-room-screen {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+}
+
+.no-room-message {
+  text-align: center;
+  color: #666;
+}
+
+.no-room-message h2 {
+  font-size: 1.5rem;
+  margin-bottom: 2rem;
+  color: #555;
+}
+
+.reset-timer {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.reset-timer p {
+  margin: 0;
+  font-size: 1.1rem;
+  font-family: monospace;
+  color: #007bff;
 }
 </style>
