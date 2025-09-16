@@ -359,7 +359,10 @@ const updateTimer = () => {
     if (timerInterval) {
       clearInterval(timerInterval)
     }
-    refreshUserData()
+    // 定時リセット時にページをリロード
+    setTimeout(() => {
+      window.location.reload()
+    }, 1000)
   }
 }
 
@@ -409,9 +412,25 @@ const handleMouseMove = (event: MouseEvent) => {
   mouseY.value = event.clientY
 }
 
+// Visual Viewport API対応
+const handleViewportChange = () => {
+  if (window.visualViewport) {
+    const inputArea = document.querySelector('.input-area') as HTMLElement
+    if (inputArea) {
+      const keyboardHeight = window.innerHeight - window.visualViewport.height
+      inputArea.style.transform = `translateY(-${keyboardHeight}px)`
+    }
+  }
+}
+
 // マウス移動イベントリスナーを追加
 if (typeof window !== 'undefined') {
   window.addEventListener('mousemove', handleMouseMove)
+  
+  // Visual Viewport API対応
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', handleViewportChange)
+  }
 }
 
 onUnmounted(() => {
@@ -423,6 +442,11 @@ onUnmounted(() => {
   }
   if (typeof window !== 'undefined') {
     window.removeEventListener('mousemove', handleMouseMove)
+    
+    // Visual Viewport APIクリーンアップ
+    if (window.visualViewport) {
+      window.visualViewport.removeEventListener('resize', handleViewportChange)
+    }
   }
 })
 </script>
@@ -957,6 +981,7 @@ onUnmounted(() => {
   bottom: 0;
   left: 0;
   right: 0;
+  transition: transform 0.3s ease;
 }
 
 .input-area textarea {
