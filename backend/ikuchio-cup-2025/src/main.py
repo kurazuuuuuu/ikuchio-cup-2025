@@ -67,14 +67,17 @@ def debug_database():
     users = []
     rooms = []
     
-    try:
-        from db.users import firestore_get_all_users
-        from db.rooms import firestore_get_all_rooms
-        users = firestore_get_all_users()
-        rooms = firestore_get_all_rooms()
-        firestore_status = "success"
-    except Exception as e:
-        firestore_status = f"error: {str(e)}"
+    if os.environ.get('DISABLE_FIRESTORE') == 'true':
+        firestore_status = "disabled"
+    else:
+        try:
+            from db.users import firestore_get_all_users
+            from db.rooms import firestore_get_all_rooms
+            users = firestore_get_all_users()
+            rooms = firestore_get_all_rooms()
+            firestore_status = "success"
+        except Exception as e:
+            firestore_status = f"error: {str(e)}"
     
     # API KEYのテスト
     api_key_status = "unknown"
@@ -161,9 +164,15 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
             pass
 
 try:
-    app.include_router(users.users_router)
-    app.include_router(rooms.rooms_router)
-    print("[Startup] Routers loaded successfully")
+    import os
+    if os.environ.get('DISABLE_FIRESTORE') == 'true':
+        from routers import users_simple
+        app.include_router(users_simple.users_router)
+        print("[Startup] Simple routers loaded (Firestore disabled)")
+    else:
+        app.include_router(users.users_router)
+        app.include_router(rooms.rooms_router)
+        print("[Startup] Full routers loaded successfully")
 except Exception as e:
     print(f"[Startup] Error loading routers: {str(e)}")
     import traceback

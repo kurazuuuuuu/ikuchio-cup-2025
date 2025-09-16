@@ -72,7 +72,8 @@ steps:
       - '--allow-unauthenticated'
       - '--set-secrets=API_KEY=google-vertexai-api-key:latest'
       - '--service-account=ikuchio-cicd@ikuchio-cup-2025.iam.gserviceaccount.com'
-      - '--set-env-vars=GOOGLE_CLOUD_PROJECT=ikuchio-cup-2025'
+      - '--set-env-vars=GOOGLE_CLOUD_PROJECT=ikuchio-cup-2025,DISABLE_FIRESTORE=true'
+      - '--timeout=300'
       - '--port=8000'
     id: 'backend-deploy'
     waitFor: ['backend-push']
@@ -102,3 +103,4 @@ serviceAccount: 'projects/ikuchio-cup-2025/serviceAccounts/ikuchio-cicd@ikuchio-
 options:
   machineType: 'E2_HIGHCPU_8'
   logging: CLOUD_LOGGING_ONLY
+  timeout: '1200s'
