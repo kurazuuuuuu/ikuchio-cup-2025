@@ -20,96 +20,149 @@
 
 ## 技術スタック
 
-- フロント：
-  - Vue.js (JavaScript)
-- バックエンド：  
-  - API：  
-    - FastAPI (Python)  
-  - DB：  
-    - FireStore (NoSQL)  
-  - AI：  
-    - Vertex AI Studio (Gemini 2.5 Pro)
-- デプロイ：
-  - Docker
-    - GCP or homelab
-  - Cloudflare Tunnel
+- **フロントエンド**：
+  - Vue.js 3 (TypeScript)
+  - Vite (ビルドツール)
+  - Google Cloud | Firebase Authentication (匿名認証)
+
+- **バックエンド**：  
+  - FastAPI (Python)
+  - WebSocket (リアルタイム通信)
+
+- **データベース**：  
+  - Google Cloud |  Firestore (NoSQL)
+
+- **AI**
+  - Google Cloud | VertexAI Gemini 2.5 Pro (メッセージ処理・匿名化)
+
+- **インフラ**：
+  - Google Cloud | Secret Manager (API Key管理)
+  - Google Cloud | Cloud Run (コンテナホスティング)
+  - Google Cloud | Cloud Build (CI/CD)
+  - Docker (コンテナ化)
+  - GitHub (ソースコード管理)
 
 ## 開発環境
-### Frontend
+
+### 前提条件
+- Node.js 22+
+- Python 3.11+
+- UV (Pythonパッケージ管理)
+- gcloud CLI
+- Docker (オプション)
+
+### フロントエンド開発
 ```bash
-cd ikuchio-cup-2025
+cd frontend/ikuchio-cup-2025
 npm install
-npm run dev
+npm run dev  # http://localhost:5173
 ```
-### Backend (Python)
-- UV(Pythonのパッケージ管理ツール)が入っていないなら
-  - Standalone: https://docs.astral.sh/uv/getting-started/installation/#standalone-installer
-  - Homebrew: `brew install uv`
+
+### バックエンド開発
 ```bash
-# Pythonパッケージ
 cd backend/ikuchio-cup-2025
 uv sync
+uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### Backend (Google Cloud)
-- gcloud CLIのインストール
-  - URL：https://cloud.google.com/sdk/docs/install?hl=ja#installation_instructions
-    - 1. デバイスに応じたパッケージをダウンロード
-    - 2. 解凍する→`tar -xf google-cloud-〇〇.tar.gz`
-    - 3. インストールする→`cd google-cloud-sdk && ./install.sh`
-    - 4. なんか色々あるから進める
-- gcloud CLIの初期化
-  - `gcloud init`
-  - また色々出てくるからログインする（GCPのプロジェクトにアクセスできるアカウント）
+### Firebase設定
+1. Firebase Console で匿名認証を有効化
+2. プロジェクト設定からFirebase設定を取得
+3. `frontend/ikuchio-cup-2025/src/firebase/config.ts` を更新
 
-## いろいろメモ
-### エンドポイント
-```markdown
-POST `/api/users`  - ユーザー登録
-  - Body {"firebase_uid": "firebase_uid"} // ユーザーのデバイスID、ログイン時に使用する
-GET `/api/users` - ユーザー情報取得、たぶんそんなに使わない？
-  - Query {"firebase_uid": "firebase_uid"}
-POST `/api/room/{ROOM_ID}` - メッセージ送信
-  - Body {"original_text": "送信したいメッセージ"} // 送信後AIで処理し"processed_text"として保管
-GET `/api/room/{ROOM_ID}` - ルームのメッセージ履歴取得
+### Google Cloud設定
+```bash
+# gcloud CLI認証
+gcloud auth login
+gcloud config set project ikuchio-cup-2025
+
+# Secret Manager設定
+echo "YOUR_GEMINI_API_KEY" | gcloud secrets create google-vertexai-api-key --data-file=-
 ```
 
-### スキーマ
-### USER
-```json
+### デプロイ
+```bash
+# 自動デプロイ（GitHub push時）
+git push origin main
+
+# 手動デプロイ
+gcloud builds submit --config cloudbuild.yaml .
+```
+
+## 運用情報
+### API エンドポイント
+
+#### 認証
+- すべてのAPIはFirebase ID Tokenによる認証が必要
+- `Authorization: Bearer <firebase_id_token>` ヘッダーを付与
+
+#### エンドポイント一覧
+```
+POST /api/users
+  - ユーザー登録・取得
+  - Body: {"firebase_uid": "string"}
+  - Response: User object
+
+GET /api/users?firebase_uid={uid}
+  - ユーザー情報取得
+  - Response: User object
+
+POST /api/room/{room_id}
+  - メッセージ送信
+  - Body: {"original_text": "string", "sender_id": "string"}
+  - Response: Message object (AI処理後)
+
+GET /api/room/{room_id}
+  - ルームのメッセージ履歴取得
+  - Response: Message[] array
+
+WS /ws/{room_id}
+  - WebSocket接続（リアルタイム通信）
+```
+
+### データスキーマ
+
+#### User (Firestore: users/{user_id})
+```typescript
 {
-  firebase_uid: "{firebase_uid}" // ユーザーのID、ログイン時に使用する
-  created_at: {TIMEDATE}, // ユーザーの作成日時
-  room_id: "room_{UUID}" // その日参加しているルームUUID
+  firebase_uid: string;     // Firebase匿名認証UID
+  created_at: Timestamp;    // ユーザー作成日時
+  room_id: string | null;   // 参加中のルームID
 }
 ```
 
-### ROOM
-```json
+#### Room (Firestore: rooms/{room_id})
+```typescript
 {
-  id: "room_{UUID}", // UUID4で生成
-  created_at: {TIMEDATE}, // ルームが作成された日時
-  users: [ // ルームに参加しているユーザーのUUID
-    "user_{firebase_uid}", "user_{firebase_uid}"
-  ]
+  id: string;              // room_{UUID}
+  created_at: Timestamp;   // ルーム作成日時
+  users: string[];         // 参加ユーザーのfirebase_uid配列
 }
 ```
 
-### TURN
-```json
+#### Message (Firestore: messages/{message_id})
+```typescript
 {
-  id: "turn_{UUID}", // ターンごとのID
-  room_id: "room_{UUID}", // どのルームでのやりとりか
-  original_sender_id: "user_{firebase_uid}", // 元のメッセージを書いたユーザーID
-  original_text: "String", // ユーザーが書いた元のメッセージ
-  processed_text: "String", // AIが広げて匿名化した後のメッセージ
-  created_at: {TIMEDATE}, // ユーザーが書いた日時
-  processed_at: {TIMEDATE} // AIが処理を完了した日時
+  id: string;                    // turn_{UUID}
+  room_id: string;               // 所属ルームID
+  original_sender_id: string;    // 送信者のfirebase_uid
+  original_text: string;         // 元のメッセージ
+  processed_text: string;        // AI処理後のメッセージ
+  created_at: Timestamp;         // 送信日時
+  processed_at: Timestamp;       // AI処理完了日時
 }
 ```
-### AI_RESPONSE
-```json
-{
-  processed_text: "String"
-}
+
+## アーキテクチャ
+
 ```
+[ユーザー] → [Vue.js Frontend] → [Firebase Auth] → [Cloud Run Backend] → [Firestore]
+                    ↓                                        ↓
+              [WebSocket]  ←  ←  ←  ←  ←  ←  ←  ←  [Gemini AI]
+```
+
+### セキュリティ
+- Firebase匿名認証による安全なユーザー識別
+- Firebase Admin SDKによるサーバーサイド認証
+- Gemini AIによる個人情報の自動匿名化
+- Secret Managerによる機密情報管理
