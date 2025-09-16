@@ -26,10 +26,7 @@
         </div>
         
         <div class="messages" ref="messagesContainer">
-          <!-- 1人ルームの場合の背景メッセージ -->
-          <div v-if="isSoloRoom" class="solo-room-background">
-            ひとりぼっち...
-          </div>
+
           
           <div v-if="messages.length === 0" class="no-messages">
             <span v-if="!isSoloRoom">まだメッセージがありません。最初のメッセージを送ってみましょう！</span>
@@ -441,17 +438,7 @@ onUnmounted(() => {
   padding: 2rem;
 }
 
-.solo-room-background {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 2rem;
-  color: #ddd;
-  font-weight: bold;
-  pointer-events: none;
-  z-index: 0;
-}
+
 
 .messages {
   position: relative;
