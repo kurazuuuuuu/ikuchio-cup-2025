@@ -3,6 +3,7 @@ from google.genai import types
 from gcp.secret_manager import SecretManagerUtil
 import base64
 import os
+import datetime
 
 API_KEY = SecretManagerUtil().get_secret("88236233617", "google-vertexai-api-key")
 
@@ -63,9 +64,35 @@ def generate(input_text):
     ),
   )
 
-  for chunk in client.models.generate_content_stream(
-    model = model,
-    contents = contents,
-    config = generate_content_config,
-    ):
-    print(chunk.text, end="")
+  # デバッグログ: リクエスト開始
+  start_time = datetime.datetime.now()
+  print(f"[Gemini Debug] Request started at {start_time.isoformat()}")
+  print(f"[Gemini Debug] Input text: {input_text[:100]}{'...' if len(input_text) > 100 else ''}")
+  
+  try:
+    response = client.models.generate_content(
+      model = model,
+      contents = contents,
+      config = generate_content_config,
+    )
+    
+    end_time = datetime.datetime.now()
+    processing_time = (end_time - start_time).total_seconds()
+    
+    # デバッグログ: レスポンス成功
+    output_text = response.text if response.text else input_text
+    print(f"[Gemini Debug] Request completed in {processing_time:.2f}s")
+    print(f"[Gemini Debug] Output text: {output_text[:100]}{'...' if len(output_text) > 100 else ''}")
+    
+    return output_text
+    
+  except Exception as e:
+    end_time = datetime.datetime.now()
+    processing_time = (end_time - start_time).total_seconds()
+    
+    # デバッグログ: エラー
+    print(f"[Gemini Debug] Request failed after {processing_time:.2f}s")
+    print(f"[Gemini Debug] Error: {str(e)}")
+    print(f"[Gemini Debug] Fallback to original text")
+    
+    return input_text

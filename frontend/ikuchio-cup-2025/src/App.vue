@@ -39,6 +39,20 @@
               <div class="message-time">{{ formatTime(message.created_at) }}</div>
             </div>
           </div>
+          
+          <!-- AI処理中メッセージ -->
+          <div v-if="sending" class="message-wrapper own-message">
+            <div class="message-bubble processing">
+              <div class="message-content">
+                <div class="processing-indicator">
+                  <span class="dots">AIが処理中</span>
+                  <div class="dot-animation">
+                    <span>.</span><span>.</span><span>.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         
         <div class="input-area">
@@ -73,7 +87,16 @@ interface User {
   room_id: string
 }
 
-const API_BASE = 'https://ikuchio-backend-88236233617.asia-northeast1.run.app/api'
+// 環境に応じてAPI_BASEを自動切り替え
+const getApiBase = () => {
+  const hostname = window.location.hostname
+  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
+    return 'http://localhost:8000/api'
+  }
+  return 'https://ikuchio-backend-88236233617.asia-northeast1.run.app/api'
+}
+
+const API_BASE = getApiBase()
 
 const user = ref<User | null>(null)
 const roomId = ref<string>('')
@@ -242,7 +265,16 @@ const checkIfSoloRoom = async () => {
 const connectWebSocket = () => {
   if (!roomId.value) return
   
-  const wsUrl = `wss://ikuchio-backend-88236233617.asia-northeast1.run.app/ws/${roomId.value}`
+  // WebSocket URLも環境に応じて切り替え
+  const getWsUrl = () => {
+    const hostname = window.location.hostname
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
+      return `ws://localhost:8000/ws/${roomId.value}`
+    }
+    return `wss://ikuchio-backend-88236233617.asia-northeast1.run.app/ws/${roomId.value}`
+  }
+  
+  const wsUrl = getWsUrl()
   
   websocket = new WebSocket(wsUrl)
   
@@ -505,5 +537,44 @@ onUnmounted(() => {
 .input-area button:disabled {
   background: #ccc;
   cursor: not-allowed;
+}
+
+.message-bubble.processing {
+  background: #e3f2fd !important;
+  border: 1px solid #2196f3;
+}
+
+.processing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #1976d2;
+  font-style: italic;
+}
+
+.dot-animation {
+  display: flex;
+}
+
+.dot-animation span {
+  animation: blink 1.4s infinite;
+  animation-fill-mode: both;
+}
+
+.dot-animation span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.dot-animation span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes blink {
+  0%, 80%, 100% {
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
 }
 </style>

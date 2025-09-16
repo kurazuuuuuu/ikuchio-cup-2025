@@ -3,7 +3,14 @@ import uuid
 import datetime
 import random
 
-from gcp.gemini import generate
+try:
+    from gcp.gemini import generate
+    print("[Import Debug] Successfully imported generate from gcp.gemini")
+except ImportError as e:
+    print(f"[Import Debug] Failed to import generate: {e}")
+    def generate(text):
+        print(f"[Fallback Debug] Using fallback generate function")
+        return f"[AI処理済み] {text}"
 
 db = gcp.firestore.db
 
@@ -54,8 +61,24 @@ def firestore_get_all_rooms():
     return [doc.to_dict() for doc in docs if doc.to_dict()]
 
 def firestore_send_message(room_id: str, sender_id: str, original_text: str):
+    print(f"[Message Debug] Starting message processing for room {room_id}")
+    print(f"[Message Debug] Original text: {original_text}")
+    
     turn_id = f"turn_{uuid.uuid4()}"
-    processed_text = generate(original_text)  # 現在は元のテキストをそのまま使用
+    
+    # AIによるテキスト処理
+    try:
+        print(f"[Message Debug] Calling Gemini AI for processing...")
+        processed_text = generate(original_text)
+        print(f"[Message Debug] Gemini processing completed")
+        print(f"[Message Debug] Processed text: {processed_text}")
+    except Exception as e:
+        print(f"[Message Debug] AI processing failed: {e}")
+        import traceback
+        print(f"[Message Debug] Full traceback: {traceback.format_exc()}")
+        processed_text = original_text  # フォールバック
+        print(f"[Message Debug] Using fallback (original text)")
+    
     now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
     
     turn_data = {
