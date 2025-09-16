@@ -4,12 +4,12 @@ from gcp.secret_manager import SecretManagerUtil
 import base64
 import os
 
-api_key = SecretManagerUtil().get_secret("88236233617", "google-vertexai-api-key")
+API_KEY = SecretManagerUtil().get_secret("88236233617", "google-vertexai-api-key")
 
 def generate(input_text):
   client = genai.Client(
       vertexai=True,
-      api_key=os.environ.get("GOOGLE_CLOUD_API_KEY"),
+      api_key=API_KEY
   )
 
   si_text1 = """あなたは、送信側から提供された日本語の文章を処理し、個人を特定できる情報を伏せ、内容を具体的にして受信側が閲覧できるようにして閲覧側からメッセージに気軽に返せるようにテキストを処理するエキスパートです。以下の手順に従ってください。
