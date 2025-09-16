@@ -538,6 +538,7 @@ onUnmounted(() => {
   background: linear-gradient(135deg, #0a0a0a 0%, #0d0f0d 100%);
   color: #00ff00;
   position: relative;
+  user-select: none;
 }
 
 .login-screen::before {
@@ -660,6 +661,7 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  user-select: none;
 }
 
 .user-info {
@@ -718,6 +720,7 @@ onUnmounted(() => {
   z-index: 2;
   position: relative;
   padding: 40px 20px;
+  user-select: none;
 }
 
 .linux-loading {
@@ -809,6 +812,7 @@ onUnmounted(() => {
   align-items: center;
   z-index: 2;
   position: relative;
+  user-select: none;
 }
 
 .no-room-message {
@@ -1017,6 +1021,7 @@ onUnmounted(() => {
   z-index: 10;
   position: relative;
   text-shadow: 0 0 3px #00aa00;
+  user-select: none;
 }
 
 .messages::-webkit-scrollbar {
