@@ -12,7 +12,10 @@ except ImportError as e:
         print(f"[Fallback Debug] Using fallback generate function")
         return f"[AI処理済み] {text}"
 
-db = gcp.firestore.db
+def get_db():
+    return gcp.firestore.get_firestore_client()
+
+db = get_db()
 
 def create_room_with_random_users():
     # 全ユーザーを取得（効率化のため制限付き）

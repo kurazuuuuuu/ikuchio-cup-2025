@@ -1,7 +1,10 @@
 import gcp.firestore
 import datetime
 
-db = gcp.firestore.db
+def get_db():
+    return gcp.firestore.get_firestore_client()
+
+db = get_db()
 
 def firestore_create_user(fingerprint_id: str = "0000"):
     user_id = f"user_{fingerprint_id}"
