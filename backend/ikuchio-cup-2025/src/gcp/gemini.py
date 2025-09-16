@@ -12,10 +12,14 @@ def get_api_key():
     global API_KEY
     if API_KEY is None:
         try:
-            API_KEY = SecretManagerUtil().get_secret("88236233617", "google-vertexai-api-key")
-            print("[Gemini Debug] API key loaded successfully")
+            print("[Gemini Debug] Attempting to load API key from Secret Manager...")
+            secret_util = SecretManagerUtil()
+            API_KEY = secret_util.get_secret("88236233617", "google-vertexai-api-key")
+            print(f"[Gemini Debug] API key loaded successfully, length: {len(API_KEY) if API_KEY else 0}")
         except Exception as e:
-            print(f"[Gemini Debug] Failed to load API key: {e}")
+            print(f"[Gemini Debug] Failed to load API key: {type(e).__name__}: {str(e)}")
+            import traceback
+            print(f"[Gemini Debug] Full traceback: {traceback.format_exc()}")
             API_KEY = "fallback"
     return API_KEY
 

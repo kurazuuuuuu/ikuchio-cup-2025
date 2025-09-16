@@ -33,13 +33,26 @@ def api_health_check():
 def debug_database():
     from db.users import firestore_get_all_users
     from db.rooms import firestore_get_all_rooms
+    from gcp.gemini import get_api_key
     
     users = firestore_get_all_users()
     rooms = firestore_get_all_rooms()
     
+    # API KEYのテスト
+    api_key_status = "unknown"
+    try:
+        api_key = get_api_key()
+        if api_key == "fallback":
+            api_key_status = "failed"
+        else:
+            api_key_status = f"success (length: {len(api_key)})"
+    except Exception as e:
+        api_key_status = f"error: {str(e)}"
+    
     return {
         "users_count": len(users),
         "rooms_count": len(rooms),
+        "api_key_status": api_key_status,
         "users": users,
         "rooms": rooms
     }
