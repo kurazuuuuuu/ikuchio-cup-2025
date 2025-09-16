@@ -51,11 +51,59 @@ def firestore_get_all_rooms():
     
     return rooms
 
+def firestore_send_message(room_id: str, sender_id: str, original_text: str):
+    turn_id = f"turn_{uuid.uuid4()}"
+    processed_text = original_text  # ユーザー名を削除
+    now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
+    
+    turn_data = {
+        "id": turn_id,
+        "room_id": room_id,
+        "original_sender_id": sender_id,
+        "original_text": original_text,
+        "processed_text": processed_text,
+        "created_at": now.isoformat(),
+        "processed_at": now.isoformat()
+    }
+    
+    db.collection("turns").document(turn_id).set(turn_data)
+    return turn_data
+
+def firestore_get_messages(room_id: str):
+    turns_ref = db.collection("turns")
+    query = turns_ref.where("room_id", "==", room_id)
+    docs = query.get()
+    
+    messages = []
+    for doc in docs:
+        data = doc.to_dict()
+        if data:
+            # created_atを文字列に変換
+            if 'created_at' in data and hasattr(data['created_at'], 'isoformat'):
+                data['created_at'] = data['created_at'].isoformat()
+            if 'processed_at' in data and hasattr(data['processed_at'], 'isoformat'):
+                data['processed_at'] = data['processed_at'].isoformat()
+            messages.append(data)
+    
+    # ソート処理
+    try:
+        messages.sort(key=lambda x: x.get('created_at', ''))
+    except:
+        pass  # ソートに失敗した場合はそのまま返す
+    
+    return messages
+
 def firestore_reset_all_rooms():
     # 全ルーム削除
     rooms_ref = db.collection("rooms")
     docs = rooms_ref.get()
     for doc in docs:
+        doc.reference.delete()
+    
+    # 全メッセージ削除
+    turns_ref = db.collection("turns")
+    turn_docs = turns_ref.get()
+    for doc in turn_docs:
         doc.reference.delete()
     
     # 全ユーザーのroom_idをクリア
