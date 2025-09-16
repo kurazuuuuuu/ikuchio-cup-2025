@@ -1,5 +1,6 @@
 from google import genai
 from google.genai import types
+from google.genai.types import HarmCategory, HarmBlockThreshold
 from gcp.secret_manager import SecretManagerUtil
 import base64
 import os
@@ -77,17 +78,17 @@ def generate(input_text):
     seed = 0,
     max_output_tokens = 65535,
     safety_settings = [types.SafetySetting(
-      category="HARM_CATEGORY_HATE_SPEECH",
-      threshold="OFF"
+      category=HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+      threshold=HarmBlockThreshold.OFF
     ),types.SafetySetting(
-      category="HARM_CATEGORY_DANGEROUS_CONTENT",
-      threshold="OFF"
+      category=HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+      threshold=HarmBlockThreshold.OFF
     ),types.SafetySetting(
-      category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
-      threshold="OFF"
+      category=HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+      threshold=HarmBlockThreshold.OFF
     ),types.SafetySetting(
-      category="HARM_CATEGORY_HARASSMENT",
-      threshold="OFF"
+      category=HarmCategory.HARM_CATEGORY_HARASSMENT,
+      threshold=HarmBlockThreshold.OFF
     )],
     system_instruction=[types.Part.from_text(text=si_text1)],
     thinking_config=types.ThinkingConfig(
