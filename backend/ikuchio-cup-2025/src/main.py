@@ -59,12 +59,22 @@ def api_health_check():
 
 @app.get("/api/debug")
 def debug_database():
-    from db.users import firestore_get_all_users
-    from db.rooms import firestore_get_all_rooms
+    import os
     from gcp.gemini import get_api_key
     
-    users = firestore_get_all_users()
-    rooms = firestore_get_all_rooms()
+    # Firestoreアクセスをテスト
+    firestore_status = "unknown"
+    users = []
+    rooms = []
+    
+    try:
+        from db.users import firestore_get_all_users
+        from db.rooms import firestore_get_all_rooms
+        users = firestore_get_all_users()
+        rooms = firestore_get_all_rooms()
+        firestore_status = "success"
+    except Exception as e:
+        firestore_status = f"error: {str(e)}"
     
     # API KEYのテスト
     api_key_status = "unknown"
@@ -78,11 +88,16 @@ def debug_database():
         api_key_status = f"error: {str(e)}"
     
     return {
+        "firestore_status": firestore_status,
         "users_count": len(users),
         "rooms_count": len(rooms),
         "api_key_status": api_key_status,
-        "users": users,
-        "rooms": rooms
+        "environment": {
+            "GOOGLE_CLOUD_PROJECT": os.environ.get("GOOGLE_CLOUD_PROJECT", "Not set"),
+            "GCLOUD_PROJECT": os.environ.get("GCLOUD_PROJECT", "Not set")
+        },
+        "users": users[:5] if users else [],  # 最初の5件のみ
+        "rooms": rooms[:5] if rooms else []   # 最初の5件のみ
     }
 
 @app.get("/api/test-secret")
