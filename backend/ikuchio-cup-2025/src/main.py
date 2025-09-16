@@ -27,6 +27,32 @@ def health_check():
         print(f"[Health] Traceback: {traceback.format_exc()}")
         return {"message": f"Health check failed: {str(e)}", "status": "error"}
 
+@app.get("/api/status")
+def api_status():
+    """APIの状態を詳細に返すエンドポイント"""
+    try:
+        import sys
+        import os
+        status_info = {
+            "status": "ok",
+            "python_version": sys.version,
+            "python_path": sys.path,
+            "working_directory": os.getcwd(),
+            "environment_vars": {
+                "PORT": os.environ.get("PORT", "Not set"),
+                "PYTHONPATH": os.environ.get("PYTHONPATH", "Not set"),
+                "API_KEY": "Set" if os.environ.get("API_KEY") else "Not set"
+            }
+        }
+        return status_info
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
+
 @app.get("/api/health")
 def api_health_check():
     return {"message": "API is working!", "status": "ok"}
