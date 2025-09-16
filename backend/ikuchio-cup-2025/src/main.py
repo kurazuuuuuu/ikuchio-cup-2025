@@ -76,5 +76,7 @@ app.include_router(rooms.rooms_router)
 
 if __name__ == "__main__":
     import uvicorn
-    print("Starting server on http://0.0.0.0:8000")
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=False, log_level="warning", access_log=False)
+    import os
+    port = int(os.environ.get("PORT", 8000))
+    print(f"Starting server on http://0.0.0.0:{port}")
+    uvicorn.run(app, host="0.0.0.0", port=port, reload=False, log_level="info")
