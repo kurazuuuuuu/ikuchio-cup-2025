@@ -1,125 +1,135 @@
-<mxfile host="app.diagrams.net" modified="2024-01-01T00:00:00.000Z" agent="5.0" etag="xxx" version="22.1.16" type="device">
+<mxfile host="Electron" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/28.1.2 Chrome/138.0.7204.243 Electron/37.4.0 Safari/537.36" version="28.1.2">
   <diagram name="ikuchio-cup-2025 Architecture" id="architecture">
-    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+    <mxGraphModel dx="933" dy="664" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        
-        <!-- Title -->
-        <mxCell id="title" value="ikuchio-cup-2025 システム構成図" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="400" y="20" width="369" height="30" as="geometry" />
+        <mxCell id="title" value="ikuchio-cup-2025 システム構成図" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="400" y="30" width="300" height="30" as="geometry" />
         </mxCell>
-
-        <!-- User Device -->
-        <mxCell id="user1" value="ユーザー端末 1&#xa;(ブラウザ)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
-          <mxGeometry x="80" y="120" width="120" height="60" as="geometry" />
+        <mxCell id="user" value="ユーザー" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="50" y="200" width="100" height="60" as="geometry" />
         </mxCell>
-        
-        <mxCell id="user2" value="ユーザー端末 2&#xa;(ブラウザ)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
-          <mxGeometry x="80" y="220" width="120" height="60" as="geometry" />
+        <mxCell id="frontend" value="Vue.js 3&#xa;(TypeScript)&#xa;Vite" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="200" y="180" width="120" height="100" as="geometry" />
         </mxCell>
-
-        <!-- Frontend -->
-        <mxCell id="frontend" value="フロントエンド&#xa;Vue.js + Vite&#xa;(Cloud Run)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
-          <mxGeometry x="320" y="170" width="120" height="80" as="geometry" />
+        <mxCell id="firebase-auth" value="Firebase&#xa;Authentication&#xa;(匿名認証)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="380" y="100" width="120" height="80" as="geometry" />
         </mxCell>
-
-        <!-- Backend API -->
-        <mxCell id="backend" value="バックエンド API&#xa;FastAPI (Python)&#xa;(Cloud Run)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
-          <mxGeometry x="560" y="170" width="120" height="80" as="geometry" />
+        <mxCell id="backend" value="FastAPI&#xa;(Python)&#xa;Firebase Admin SDK" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="380" y="220" width="120" height="100" as="geometry" />
         </mxCell>
-
-        <!-- Database -->
-        <mxCell id="firestore" value="Firestore&#xa;(NoSQL データベース)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
-          <mxGeometry x="800" y="120" width="100" height="80" as="geometry" />
+        <mxCell id="websocket" value="WebSocket&#xa;(リアルタイム通信)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="200" y="320" width="120" height="60" as="geometry" />
         </mxCell>
-
-        <!-- AI Service -->
-        <mxCell id="vertexai" value="Vertex AI Studio&#xa;Gemini 2.5 Pro&#xa;(AI サービス)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
-          <mxGeometry x="800" y="240" width="120" height="80" as="geometry" />
+        <mxCell id="firestore" value="Cloud Firestore&#xa;(NoSQL)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="580" y="220" width="120" height="80" as="geometry" />
         </mxCell>
-
-        <!-- Cloud Build -->
-        <mxCell id="cloudbuild" value="Cloud Build&#xa;CI/CD パイプライン" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="320" y="350" width="120" height="60" as="geometry" />
+        <mxCell id="gemini" value="Google Gemini 2.5 Pro&#xa;(メッセージ処理・匿名化)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0f0f0;strokeColor=#666666;fontSize=11;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="580" y="340" width="140" height="80" as="geometry" />
         </mxCell>
-
-        <!-- Container Registry -->
-        <mxCell id="gcr" value="Container Registry&#xa;Docker イメージ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
-          <mxGeometry x="560" y="350" width="120" height="60" as="geometry" />
+        <mxCell id="secret-manager" value="Secret Manager&#xa;(API Key管理)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fad7ac;strokeColor=#b46504;fontSize=11;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="800" y="350" width="120" height="60" as="geometry" />
         </mxCell>
-
-        <!-- Connections -->
-        <!-- Users to Frontend -->
-        <mxCell id="edge1" edge="1" parent="1" source="user1" target="frontend">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="cloud-run" value="Cloud Run&#xa;(コンテナホスティング)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#cce5ff;strokeColor=#36393d;fontSize=11;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="380" y="360" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="edge2" edge="1" parent="1" source="user2" target="frontend">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="github" value="GitHub&#xa;(ソースコード管理)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#000000;strokeColor=#000000;fontColor=#ffffff;fontSize=11;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="50" y="360" width="120" height="60" as="geometry" />
         </mxCell>
-
-        <!-- Frontend to Backend -->
-        <mxCell id="edge3" edge="1" parent="1" source="frontend" target="backend">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="cloud-build" value="Cloud Build&#xa;(CI/CD)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#cce5ff;strokeColor=#36393d;fontSize=11;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="200" y="450" width="120" height="60" as="geometry" />
         </mxCell>
-
-        <!-- Backend to Firestore -->
-        <mxCell id="edge4" edge="1" parent="1" source="backend" target="firestore">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="arrow1" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" parent="1" source="user" target="frontend" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="390" y="330" as="sourcePoint" />
+            <mxPoint x="440" y="280" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
-
-        <!-- Backend to Vertex AI -->
-        <mxCell id="edge5" edge="1" parent="1" source="backend" target="vertexai">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="arrow2" value="ID Token" style="endArrow=classic;html=1;rounded=0;exitX=0.75;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;strokeWidth=2;" parent="1" source="frontend" target="firebase-auth" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="390" y="330" as="sourcePoint" />
+            <mxPoint x="440" y="280" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
-
-        <!-- Cloud Build to Services -->
-        <mxCell id="edge6" edge="1" parent="1" source="cloudbuild" target="frontend">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="arrow3" value="API Request" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" parent="1" source="frontend" target="backend" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="390" y="330" as="sourcePoint" />
+            <mxPoint x="440" y="280" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
-        <mxCell id="edge7" edge="1" parent="1" source="cloudbuild" target="backend">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="arrow4" value="Token検証" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;strokeWidth=2;" parent="1" source="backend" target="firebase-auth" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="390" y="330" as="sourcePoint" />
+            <mxPoint x="440" y="280" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
-        <mxCell id="edge8" edge="1" parent="1" source="cloudbuild" target="gcr">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="arrow5" value="データ操作" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" parent="1" source="backend" target="firestore" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="390" y="330" as="sourcePoint" />
+            <mxPoint x="440" y="280" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
-
-        <!-- API Endpoints Box -->
-        <mxCell id="api-box" value="API エンドポイント&#xa;&#xa;POST /api/users - ユーザー登録&#xa;GET /api/users - ユーザー情報取得&#xa;POST /api/room/{ROOM_ID} - メッセージ送信&#xa;GET /api/room/{ROOM_ID} - メッセージ履歴取得" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;verticalAlign=top;" vertex="1" parent="1">
-          <mxGeometry x="80" y="350" width="200" height="120" as="geometry" />
+        <mxCell id="arrow6" value="AI処理" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" parent="1" source="backend" target="gemini" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="390" y="330" as="sourcePoint" />
+            <mxPoint x="440" y="280" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
-
-        <!-- Data Flow Box -->
-        <mxCell id="dataflow-box" value="24時間ルームシステム&#xa;&#xa;• 毎日00:00にルーム作成&#xa;• ランダムユーザーペアリング&#xa;• AIメッセージ処理&#xa;• 匿名コミュニケーション" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=left;verticalAlign=top;" vertex="1" parent="1">
-          <mxGeometry x="800" y="350" width="200" height="120" as="geometry" />
+        <mxCell id="arrow7" value="WebSocket" style="endArrow=classic;startArrow=classic;html=1;rounded=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#9673a6;" parent="1" source="websocket" target="frontend" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="390" y="330" as="sourcePoint" />
+            <mxPoint x="440" y="280" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
-
-        <!-- Technology Stack Labels -->
-        <mxCell id="tech-frontend" value="Vue.js + JavaScript" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
-          <mxGeometry x="320" y="260" width="120" height="20" as="geometry" />
+        <mxCell id="arrow8" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#9673a6;" parent="1" source="websocket" target="backend" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="390" y="330" as="sourcePoint" />
+            <mxPoint x="440" y="280" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
-
-        <mxCell id="tech-backend" value="FastAPI + Python" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
-          <mxGeometry x="560" y="260" width="120" height="20" as="geometry" />
+        <mxCell id="arrow9" value="API Key" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" parent="1" source="gemini" target="secret-manager" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="390" y="330" as="sourcePoint" />
+            <mxPoint x="440" y="280" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
-
-        <!-- Connection Labels -->
-        <mxCell id="label1" value="HTTPS" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;" vertex="1" parent="1">
-          <mxGeometry x="220" y="150" width="40" height="20" as="geometry" />
+        <mxCell id="arrow10" value="Push" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" parent="1" source="github" target="cloud-build" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="390" y="330" as="sourcePoint" />
+            <mxPoint x="440" y="280" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
-
-        <mxCell id="label2" value="REST API" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;" vertex="1" parent="1">
-          <mxGeometry x="460" y="190" width="60" height="20" as="geometry" />
+        <mxCell id="arrow11" value="Deploy" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;strokeWidth=2;" parent="1" source="cloud-build" target="cloud-run" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="390" y="330" as="sourcePoint" />
+            <mxPoint x="440" y="280" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
-
-        <mxCell id="label3" value="NoSQL" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;" vertex="1" parent="1">
-          <mxGeometry x="720" y="150" width="40" height="20" as="geometry" />
+        <mxCell id="dataflow-box" value="24時間限定チャットシステム&#xa;&#xa;• 毎日0:00にランダムペアリング&#xa;• Firebase匿名認証でセキュア&#xa;• Gemini AIで個人情報を匿名化&#xa;• WebSocketでリアルタイム通信&#xa;• 24時間後に自動リセット" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;align=left;verticalAlign=top;fontSize=10;" parent="1" vertex="1">
+          <mxGeometry x="750" y="100" width="200" height="120" as="geometry" />
         </mxCell>
-
-        <mxCell id="label4" value="AI API" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;" vertex="1" parent="1">
-          <mxGeometry x="720" y="250" width="40" height="20" as="geometry" />
+        <mxCell id="legend-title" value="凡例" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="50" y="480" width="60" height="20" as="geometry" />
         </mxCell>
-
+        <mxCell id="legend1" value="フロントエンド" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" parent="1" vertex="1">
+          <mxGeometry x="50" y="510" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legend2" value="バックエンド" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" parent="1" vertex="1">
+          <mxGeometry x="140" y="510" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legend3" value="データベース" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" parent="1" vertex="1">
+          <mxGeometry x="230" y="510" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legend4" value="認証" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" parent="1" vertex="1">
+          <mxGeometry x="320" y="510" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legend5" value="AI" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0f0f0;strokeColor=#666666;fontSize=10;" parent="1" vertex="1">
+          <mxGeometry x="410" y="510" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legend6" value="インフラ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#cce5ff;strokeColor=#36393d;fontSize=10;" parent="1" vertex="1">
+          <mxGeometry x="500" y="510" width="80" height="30" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
