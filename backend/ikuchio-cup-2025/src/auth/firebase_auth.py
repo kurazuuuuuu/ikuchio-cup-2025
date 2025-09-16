@@ -1,24 +1,15 @@
 from fastapi import HTTPException, Depends, Request
 from fastapi.security import HTTPBearer
+from firebase_admin import auth, initialize_app, credentials
 import os
 
-# Firebase Admin SDKを遅延インポート
-firebase_app = None
-firebase_auth = None
-
-def get_firebase_auth():
-    global firebase_app, firebase_auth
-    if firebase_auth is None:
-        try:
-            from firebase_admin import auth, initialize_app, credentials
-            if firebase_app is None:
-                firebase_app = initialize_app()
-                print("[Firebase] Admin SDK initialized successfully")
-            firebase_auth = auth
-        except Exception as e:
-            print(f"[Firebase] Admin SDK initialization failed: {e}")
-            firebase_auth = None
-    return firebase_auth
+# Firebase Admin初期化
+try:
+    initialize_app()
+    print("[Firebase] Admin SDK initialized successfully")
+except Exception as e:
+    print(f"[Firebase] Admin SDK initialization failed: {e}")
+    raise e  # Firebaseは必須なのでエラーで停止
 
 security = HTTPBearer()
 
@@ -34,10 +25,7 @@ async def verify_firebase_token(request: Request) -> dict:
     
     try:
         # Firebase IDトークンを検証
-        auth_module = get_firebase_auth()
-        if auth_module is None:
-            raise Exception("Firebase Admin SDK not available")
-        decoded_token = auth_module.verify_id_token(token)
+        decoded_token = auth.verify_id_token(token)
         print(f"[Firebase] Token verified successfully for UID: {decoded_token['uid']}")
         return {
             'firebase_uid': decoded_token['uid'],
