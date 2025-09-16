@@ -30,7 +30,7 @@
             まだメッセージがありません。最初のメッセージを送ってみましょう！
           </div>
           <div v-for="message in messages" :key="message.id" 
-               :class="['message-wrapper', message.original_sender_id === user?.fingerprint_id ? 'own-message' : 'other-message']">
+                :class="['message-wrapper', message.original_sender_id === user?.fingerprint_id ? 'own-message' : 'other-message']">
             <div class="message-bubble">
               <div class="message-content">{{ cleanMessageText(message.processed_text) }}</div>
               <div class="message-time">{{ formatTime(message.created_at) }}</div>
@@ -55,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, onUnmounted, nextTick } from 'vue'
 import { generateFingerprint } from './utils/fingerprint'
 
 interface Message {
@@ -71,12 +71,10 @@ interface User {
 }
 
 const getApiBaseUrl = () => {
-  // 環境変数が設定されている場合はそれを使用
   if (import.meta.env.VITE_API_BASE_URL) {
     return import.meta.env.VITE_API_BASE_URL
   }
   
-  // フォールバック: 現在のホスト名を使用
   const hostname = window.location.hostname
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     return 'http://localhost:8000/api'
@@ -106,8 +104,6 @@ const login = async () => {
       alert(`フィンガープリントの生成に失敗しました。\n生成されたフィンガープリント: ${fingerprint}\nブラウザを更新して再度お試しください。`)
       return
     }
-    
-
     
     const response = await fetch(`${API_BASE}/users`, {
       method: 'POST',
@@ -170,15 +166,9 @@ const sendMessage = async () => {
     const messageText = newMessage.value
     newMessage.value = ''
     
-
-    
-    // WebSocketで通知
     if (websocket && websocket.readyState === WebSocket.OPEN) {
       const wsMessage = JSON.stringify({ type: 'message', text: messageText })
-      console.log('WebSocketメッセージ送信:', wsMessage)
       websocket.send(wsMessage)
-    } else {
-      console.log('WebSocket接続が利用できません')
     }
     
     await fetchMessages()
@@ -210,40 +200,27 @@ const fetchMessages = async () => {
 const connectWebSocket = () => {
   if (!roomId.value) return
   
-  // WebSocket URLを構築
   const hostname = import.meta.env.VITE_API_BASE_URL ? 
     import.meta.env.VITE_API_BASE_URL.replace('http://', '').replace('/api', '') :
     window.location.hostname + ':8000'
   const wsUrl = `ws://${hostname}/ws/${roomId.value}`
   
-  console.log(`WebSocket接続試行: ${wsUrl}`)
-  console.log(`環境変数: ${import.meta.env.VITE_API_BASE_URL}`)
-  
   websocket = new WebSocket(wsUrl)
   
   websocket.onopen = () => {
-    console.log('WebSocket接続成功')
     fetchMessages()
   }
   
-  websocket.onmessage = (event) => {
-    console.log('WebSocketメッセージ受信:', event.data)
+  websocket.onmessage = () => {
     fetchMessages()
   }
   
-  websocket.onclose = (event) => {
-    console.log(`WebSocket接続終了: code=${event.code}, reason=${event.reason}`)
-    // 3秒後に再接続を試みる
+  websocket.onclose = () => {
     setTimeout(() => {
       if (roomId.value) {
-        console.log('再接続を試みます...')
         connectWebSocket()
       }
     }, 3000)
-  }
-  
-  websocket.onerror = (error) => {
-    console.error('WebSocketエラー:', error)
   }
 }
 
@@ -274,7 +251,6 @@ const formatTime = (timestamp: string) => {
 }
 
 const cleanMessageText = (text: string) => {
-  // [ユーザーID]: の形式を除去
   return text.replace(/^\[[^\]]+\]:\s*/, '')
 }
 
@@ -484,128 +460,5 @@ onUnmounted(() => {
 .input-area button:disabled {
   background: #ccc;
   cursor: not-allowed;
-};
-  overflow-y: auto;
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.message-wrapper {
-  display: flex;
-  width: 100%;
-}
-
-.own-message {
-  justify-content: flex-end;
-}
-
-.other-message {
-  justify-content: flex-start;
-}
-
-.message-bubble {
-  max-width: 70%;
-  padding: 0.75rem 1rem;
-  border-radius: 18px;
-  word-wrap: break-word;
-}
-
-.own-message .message-bubble {
-  background: #007bff;
-  color: white;
-  border-bottom-right-radius: 4px;
-}
-
-.other-message .message-bubble {
-  background: #f1f3f4;
-  color: #333;
-  border-bottom-left-radius: 4px;
-}
-
-.message-content {
-  margin-bottom: 0.25rem;
-  line-height: 1.4;
-}
-
-.message-time {
-  font-size: 0.7rem;
-  opacity: 0.7;
-  text-align: right;
-}
-
-.other-message .message-time {
-  text-align: left;
-}
-
-.input-area {
-  display: flex;
-  padding: 1rem;
-  gap: 1rem;
-  border-top: 1px solid #eee;
-}
-
-.input-area textarea {
-  flex: 1;
-  padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  resize: none;
-  min-height: 60px;
-}
-
-.input-area button {
-  padding: 0.5rem 1rem;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.input-area button:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-}
-
-.no-messages {
-  text-align: center;
-  color: #999;
-  font-style: italic;
-  padding: 2rem;
-}
-
-.no-room-screen {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 2rem;
-}
-
-.no-room-message {
-  text-align: center;
-  color: #666;
-}
-
-.no-room-message h2 {
-  font-size: 1.5rem;
-  margin-bottom: 2rem;
-  color: #555;
-}
-
-.reset-timer {
-  background: #f8f9fa;
-  padding: 1rem;
-  border-radius: 8px;
-  border: 1px solid #dee2e6;
-}
-
-.reset-timer p {
-  margin: 0;
-  font-size: 1.1rem;
-  font-family: monospace;
-  color: #007bff;
 }
 </style>
