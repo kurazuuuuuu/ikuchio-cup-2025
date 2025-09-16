@@ -29,10 +29,10 @@ def create_room_with_random_users():
     selected_users = random.sample(users_docs, 2)
     user1_dict = selected_users[0].to_dict()
     user2_dict = selected_users[1].to_dict()
-    if user1_dict is None or user2_dict is None or "fingerprint_id" not in user1_dict or "fingerprint_id" not in user2_dict:
+    if user1_dict is None or user2_dict is None or "firebase_uid" not in user1_dict or "firebase_uid" not in user2_dict:
         return None
-    user1_id = user1_dict["fingerprint_id"]
-    user2_id = user2_dict["fingerprint_id"]
+    user1_id = user1_dict["firebase_uid"]
+    user2_id = user2_dict["firebase_uid"]
     
     # ルーム作成
     room_id = f"room_{uuid.uuid4()}"
@@ -148,8 +148,8 @@ def _clear_user_room_assignments():
         try:
             user_doc.reference.update({"room_id": None})
             user_data = user_doc.to_dict()
-            fingerprint_id = user_data.get('fingerprint_id', 'unknown') if user_data else 'unknown'
-            print(f"Debug: Cleared room_id for user user_{fingerprint_id}")
+            firebase_uid = user_data.get('firebase_uid', 'unknown') if user_data else 'unknown'
+            print(f"Debug: Cleared room_id for user user_{firebase_uid}")
         except Exception as e:
             print(f"Debug: Failed to clear room_id: {e}")
     return user_docs
@@ -162,9 +162,9 @@ def _create_pair_rooms(users_list):
         user1_dict = users_list[i].to_dict()
         user2_dict = users_list[i + 1].to_dict()
         
-        if user1_dict and user2_dict and "fingerprint_id" in user1_dict and "fingerprint_id" in user2_dict:
-            user1_id = user1_dict["fingerprint_id"]
-            user2_id = user2_dict["fingerprint_id"]
+        if user1_dict and user2_dict and "firebase_uid" in user1_dict and "firebase_uid" in user2_dict:
+            user1_id = user1_dict["firebase_uid"]
+            user2_id = user2_dict["firebase_uid"]
             
             room_id = f"room_{uuid.uuid4()}"
             room_data = {
@@ -195,8 +195,8 @@ def _handle_odd_user(users_list):
     """Handle the last user if odd number of users - leave without room"""
     if len(users_list) % 2 == 1:
         last_user_dict = users_list[-1].to_dict()
-        if last_user_dict and "fingerprint_id" in last_user_dict:
-            user_id = last_user_dict["fingerprint_id"]
+        if last_user_dict and "firebase_uid" in last_user_dict:
+            user_id = last_user_dict["firebase_uid"]
             print(f"Debug: User user_{user_id} left without room assignment (odd number)")
     return None
 

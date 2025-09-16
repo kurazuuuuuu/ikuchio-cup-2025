@@ -3,7 +3,7 @@ from pydantic import BaseModel
 import os
 
 class UserCreate(BaseModel):
-    fingerprint_id: str
+    firebase_uid: str
 
 users_router = APIRouter()
 
@@ -11,7 +11,7 @@ users_router = APIRouter()
 async def create_user(user_data: UserCreate):
     if os.environ.get('DISABLE_FIRESTORE') == 'true':
         return {
-            "fingerprint_id": user_data.fingerprint_id,
+            "firebase_uid": user_data.firebase_uid,
             "created_at": "2025-01-01T00:00:00",
             "room_id": None,
             "status": "firestore_disabled"
@@ -19,15 +19,15 @@ async def create_user(user_data: UserCreate):
     
     try:
         from db.users import firestore_create_user
-        return firestore_create_user(user_data.fingerprint_id)
+        return firestore_create_user(user_data.firebase_uid)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"ユーザー作成に失敗しました: {str(e)}")
 
 @users_router.get("/api/users")
-async def get_user(fingerprint_id: str):
+async def get_user(firebase_uid: str):
     if os.environ.get('DISABLE_FIRESTORE') == 'true':
         return {
-            "fingerprint_id": fingerprint_id,
+            "firebase_uid": firebase_uid,
             "created_at": "2025-01-01T00:00:00",
             "room_id": None,
             "status": "firestore_disabled"
@@ -35,7 +35,7 @@ async def get_user(fingerprint_id: str):
     
     try:
         from db.users import firestore_get_user
-        user = firestore_get_user(fingerprint_id)
+        user = firestore_get_user(firebase_uid)
         if not user:
             raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
         return user
