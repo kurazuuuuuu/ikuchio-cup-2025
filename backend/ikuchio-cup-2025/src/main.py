@@ -4,11 +4,28 @@ from fastapi.middleware.cors import CORSMiddleware
 from routers import users, rooms
 import json
 import os
+import asyncio
+from contextlib import asynccontextmanager
 from starlette.websockets import WebSocketState
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("[Startup] Application starting up...")
+    
+    # ルームスケジューラーを開始
+    from scheduler.room_scheduler import room_scheduler
+    asyncio.create_task(room_scheduler.start())
+    
+    yield
+    
+    # ルームスケジューラーを停止
+    room_scheduler.stop()
+    print("[Shutdown] Application shutting down...")
 
 # 本番環境では/docsを無効化
 is_production = os.environ.get('ENVIRONMENT') == 'production'
 app = FastAPI(
+    lifespan=lifespan,
     docs_url=None if is_production else "/docs",
     redoc_url=None if is_production else "/redoc",
     openapi_url=None if is_production else "/openapi.json"

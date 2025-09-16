@@ -13,7 +13,7 @@
         <div class="no-room-message">
           <h2>まだあなたの相手は見つかっていないようですよ...</h2>
           <div class="reset-timer">
-            <p>リセットまでの時間: {{ timeLeft }}</p>
+            <p>次のペアリングまで: {{ timeLeft }}</p>
           </div>
         </div>
       </div>
@@ -300,19 +300,26 @@ const startTimer = () => {
 
 const updateTimer = () => {
   const now = new Date()
-  const tomorrow = new Date(now)
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  tomorrow.setHours(0, 0, 0, 0)
   
-  const diff = tomorrow.getTime() - now.getTime()
-  const hours = Math.floor(diff / (1000 * 60 * 60))
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+  // 次の15分区切りの時刻を計算
+  const nextReset = new Date(now)
+  const currentMinutes = now.getMinutes()
+  const nextMinutes = Math.ceil((currentMinutes + 1) / 15) * 15
+  
+  if (nextMinutes >= 60) {
+    nextReset.setHours(now.getHours() + 1, 0, 0, 0)
+  } else {
+    nextReset.setMinutes(nextMinutes, 0, 0)
+  }
+  
+  const diff = nextReset.getTime() - now.getTime()
+  const minutes = Math.floor(diff / (1000 * 60))
   const seconds = Math.floor((diff % (1000 * 60)) / 1000)
   
-  timeLeft.value = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+  timeLeft.value = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
   
   if (diff <= 0) {
-    timeLeft.value = '00:00:00'
+    timeLeft.value = '00:00'
     if (timerInterval) {
       clearInterval(timerInterval)
     }
