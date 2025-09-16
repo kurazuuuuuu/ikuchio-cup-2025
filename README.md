@@ -66,9 +66,9 @@ uv sync
 ### エンドポイント
 ```markdown
 POST `/api/users`  - ユーザー登録
-  - Body {"device_id": "DEVICE_ID"} // ユーザーのデバイスID、ログイン時に使用する
+  - Body {"fingerprint_id": "fingerprint_ID"} // ユーザーのデバイスID、ログイン時に使用する
 GET `/api/users` - ユーザー情報取得、たぶんそんなに使わない？
-  - Query {"device_id": "DEVICE_ID"}
+  - Query {"fingerprint_id": "fingerprint_ID"}
 POST `/api/room/{ROOM_ID}` - メッセージ送信
   - Body {"original_text": "送信したいメッセージ"} // 送信後AIで処理し"processed_text"として保管
 GET `/api/room/{ROOM_ID}` - ルームのメッセージ履歴取得
@@ -78,7 +78,7 @@ GET `/api/room/{ROOM_ID}` - ルームのメッセージ履歴取得
 ### USER
 ```json
 {
-  device_id: "{DEVICE_ID}" // ユーザーのデバイスID、ログイン時に使用する
+  fingerprint_id: "{fingerprint_ID}" // ユーザーのID、ログイン時に使用する
   created_at: {TIMEDATE}, // ユーザーの作成日時
   room_id: "room_{UUID}" // その日参加しているルームUUID
 }
@@ -90,7 +90,7 @@ GET `/api/room/{ROOM_ID}` - ルームのメッセージ履歴取得
   id: "room_{UUID}", // UUID4で生成
   created_at: {TIMEDATE}, // ルームが作成された日時
   users: [ // ルームに参加しているユーザーのUUID
-    "user_{DEVICE_ID}", "user_{DEVICE_ID}"
+    "user_{fingerprint_ID}", "user_{fingerprint_ID}"
   ]
 }
 ```
@@ -100,7 +100,7 @@ GET `/api/room/{ROOM_ID}` - ルームのメッセージ履歴取得
 {
   id: "turn_{UUID}", // ターンごとのID
   room_id: "room_{UUID}", // どのルームでのやりとりか
-  original_sender_id: "user_{DEVICE_ID}", // 元のメッセージを書いたユーザーID
+  original_sender_id: "user_{fingerprint_ID}", // 元のメッセージを書いたユーザーID
   original_text: "String", // ユーザーが書いた元のメッセージ
   processed_text: "String", // AIが広げて匿名化した後のメッセージ
   created_at: {TIMEDATE}, // ユーザーが書いた日時
