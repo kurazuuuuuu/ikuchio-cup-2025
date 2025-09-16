@@ -1,65 +1,46 @@
 steps:
-  # Backend build
-  - name: 'python:3.13-slim'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        cd backend/ikuchio-cup-2025
-        pip install uv
-        uv sync
-        uv run ruff check src/ --fix || true
-    id: 'backend-lint'
-
-  # Frontend build
-  - name: 'node:22-alpine'
-    entrypoint: 'sh'
-    args:
-      - '-c'
-      - |
-        cd frontend/ikuchio-cup-2025
-        npm ci
-        npm run type-check
-        npm run build-only
-    id: 'frontend-build'
-
-  # Build backend Docker image
+  # Build and push backend (combined)
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
       - '-t'
       - 'gcr.io/$PROJECT_ID/ikuchio-backend:$COMMIT_SHA'
+      - '--cache-from'
+      - 'gcr.io/$PROJECT_ID/ikuchio-backend:latest'
+      - '--build-arg'
+      - 'BUILDKIT_INLINE_CACHE=1'
       - '-f'
       - 'backend/ikuchio-cup-2025/Dockerfile'
       - 'backend/ikuchio-cup-2025'
-    id: 'backend-docker-build'
-    waitFor: ['backend-lint']
+    id: 'backend-build'
 
-  # Build frontend Docker image
+  # Build and push frontend (combined)
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
       - '-t'
       - 'gcr.io/$PROJECT_ID/ikuchio-frontend:$COMMIT_SHA'
+      - '--cache-from'
+      - 'gcr.io/$PROJECT_ID/ikuchio-frontend:latest'
+      - '--build-arg'
+      - 'BUILDKIT_INLINE_CACHE=1'
       - '-f'
       - 'frontend/ikuchio-cup-2025/Dockerfile'
       - 'frontend/ikuchio-cup-2025'
-    id: 'frontend-docker-build'
-    waitFor: ['frontend-build']
+    id: 'frontend-build'
 
-  # Push backend image
+  # Push images in parallel
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/ikuchio-backend:$COMMIT_SHA']
     id: 'backend-push'
-    waitFor: ['backend-docker-build']
+    waitFor: ['backend-build']
 
-  # Push frontend image
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/ikuchio-frontend:$COMMIT_SHA']
     id: 'frontend-push'
-    waitFor: ['frontend-docker-build']
+    waitFor: ['frontend-build']
 
-  # Deploy backend to Cloud Run
+  # Deploy in parallel
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'gcloud'
     args:
@@ -75,10 +56,10 @@ steps:
       - '--set-env-vars=GOOGLE_CLOUD_PROJECT=ikuchio-cup-2025,DISABLE_FIRESTORE=true'
       - '--timeout=300'
       - '--port=8000'
+      - '--no-traffic'
     id: 'backend-deploy'
     waitFor: ['backend-push']
 
-  # Deploy frontend to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'gcloud'
     args:
@@ -90,7 +71,7 @@ steps:
       - '--platform=managed'
       - '--allow-unauthenticated'
       - '--service-account=ikuchio-cicd@ikuchio-cup-2025.iam.gserviceaccount.com'
-
+      - '--no-traffic'
     id: 'frontend-deploy'
     waitFor: ['frontend-push']
 
@@ -100,7 +81,11 @@ images:
 
 serviceAccount: 'projects/ikuchio-cup-2025/serviceAccounts/ikuchio-cicd@ikuchio-cup-2025.iam.gserviceaccount.com'
 
+timeout: '300s'
+
 options:
-  machineType: 'E2_HIGHCPU_8'
+  machineType: 'E2_HIGHCPU_32'
   logging: CLOUD_LOGGING_ONLY
-  timeout: '1200s'
+  diskSizeGb: 100
+  env:
+    - 'DOCKER_BUILDKIT=1'
