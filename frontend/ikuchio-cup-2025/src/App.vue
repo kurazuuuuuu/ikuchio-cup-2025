@@ -70,19 +70,7 @@ interface User {
   room_id: string
 }
 
-const getApiBaseUrl = () => {
-  if (import.meta.env.VITE_API_BASE_URL) {
-    return import.meta.env.VITE_API_BASE_URL
-  }
-  
-  const hostname = window.location.hostname
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'http://localhost:8000/api'
-  }
-  return `http://${hostname}:8000/api`
-}
-
-const API_BASE = getApiBaseUrl()
+const API_BASE = 'https://ikuchio-backend-88236233617.asia-northeast1.run.app/api'
 
 const user = ref<User | null>(null)
 const roomId = ref<string>('')
@@ -200,10 +188,7 @@ const fetchMessages = async () => {
 const connectWebSocket = () => {
   if (!roomId.value) return
   
-  const hostname = import.meta.env.VITE_API_BASE_URL ? 
-    import.meta.env.VITE_API_BASE_URL.replace('http://', '').replace('/api', '') :
-    window.location.hostname + ':8000'
-  const wsUrl = `ws://${hostname}/ws/${roomId.value}`
+  const wsUrl = `wss://ikuchio-backend-88236233617.asia-northeast1.run.app/ws/${roomId.value}`
   
   websocket = new WebSocket(wsUrl)
   
