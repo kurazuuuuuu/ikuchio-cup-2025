@@ -1,0 +1,37 @@
+from fastapi import APIRouter
+import uvicorn
+
+from db.rooms import firestore_get_room, firestore_get_all_rooms, firestore_reset_all_rooms, create_room_with_random_users
+
+rooms_router = APIRouter()
+
+@rooms_router.post("/api/rooms")
+async def create_room():
+    try:
+        result = create_room_with_random_users()
+        if result is None:
+            return {"error": "Not enough users to create room"}
+        return result
+    except:
+        return {"error": "Failed to create room"}
+    
+@rooms_router.get("/api/rooms/{room_id}")
+async def get_room(room_id: str):
+    try:
+        return(firestore_get_room(room_id))
+    except:
+        return("Error!")
+
+@rooms_router.get("/api/rooms")
+async def get_all_rooms():
+    try:
+        return firestore_get_all_rooms()
+    except:
+        return {"error": "Failed to get rooms"}
+
+@rooms_router.post("/api/rooms/refresh")
+async def refresh_rooms():
+    try:
+        return firestore_reset_all_rooms()
+    except:
+        return {"error": "Failed to reset rooms"}
