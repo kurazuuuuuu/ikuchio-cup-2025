@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <div v-if="!user" class="login-screen">
-      <h1>24時間でさようなら</h1>
+      <h1>{{ animatedTitle }}</h1>
       <button @click="login">入室する</button>
     </div>
     
@@ -35,7 +35,9 @@
           <div v-for="message in messages" :key="message.id" 
                 :class="['message-wrapper', message.original_sender_id === user?.fingerprint_id ? 'own-message' : 'other-message']">
             <div class="message-bubble">
-              <div class="message-content">{{ cleanMessageText(message.processed_text) }}</div>
+              <div class="message-content">
+                {{ animatedMessages.find(m => m.id === message.id)?.text || cleanMessageText(message.processed_text) }}
+              </div>
               <div class="message-time">{{ formatTime(message.created_at) }}</div>
             </div>
           </div>
@@ -72,7 +74,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onUnmounted, nextTick } from 'vue'
+import { ref, onUnmounted, nextTick, watch } from 'vue'
 import { generateFingerprint } from './utils/fingerprint'
 
 interface Message {
@@ -109,6 +111,19 @@ const isSoloRoom = ref<boolean>(false)
 
 let timerInterval: number | null = null
 let websocket: WebSocket | null = null
+
+const titleText = '24時間でさようなら'
+const animatedTitle = ref('')
+
+async function typeTitle(text: string) {
+  animatedTitle.value = ''
+  for (let i = 0; i < text.length; i++) {
+    animatedTitle.value += text[i]
+    await new Promise(res => setTimeout(res, 140)) // ← 速さを遅く
+  }
+}
+
+typeTitle(titleText)
 
 const login = async () => {
   let fingerprint = ''
@@ -338,6 +353,30 @@ const scrollToBottom = () => {
   }
 }
 
+// タイプアニメーション用
+const animatedMessages = ref<{ id: string, text: string }[]>([])
+
+watch(messages, async (newMessages: Message[]) => {
+  // 新しいメッセージが来たらアニメーション開始
+  animatedMessages.value = []
+  for (const msg of newMessages) {
+    const cleanText = cleanMessageText(msg.processed_text)
+    await typeText(msg.id, cleanText)
+  }
+})
+
+async function typeText(id: string, text: string) {
+  let display = ''
+  for (let i = 0; i < text.length; i++) {
+    display += text[i]
+    animatedMessages.value = [
+      ...animatedMessages.value.filter(m => m.id !== id),
+      { id, text: display }
+    ]
+    await new Promise(res => setTimeout(res, 20)) // 速さ調整
+  }
+}
+
 onUnmounted(() => {
   if (websocket) {
     websocket.close()
@@ -347,10 +386,16 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
 #app {
   height: 100vh;
   display: flex;
   flex-direction: column;
+  background: #181818;
+  font-family: 'Press Start 2P', monospace;
+  color: #00ff00;
+  letter-spacing: 1px;
 }
 
 .login-screen {
@@ -360,60 +405,65 @@ onUnmounted(() => {
   align-items: center;
   height: 100vh;
   gap: 2rem;
+  background: #181818;
 }
 
 .login-screen h1 {
-  font-size: 2rem;
+  font-size: 1.2rem;
   margin: 0;
+  color: #00ff00;
+  text-shadow: 0 0 2px #00ff00, 0 0 8px #222;
 }
 
 .login-screen button {
-  padding: 1rem 2rem;
-  font-size: 1.2rem;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  background: #222;
+  color: #00ff00;
+  border: 2px solid #00ff00;
+  border-radius: 0;
   cursor: pointer;
-}
-
-.chat-screen {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
+  font-family: inherit;
+  box-shadow: none;
+  letter-spacing: 1px;
 }
 
 .user-id {
-  padding: 0.5rem 1rem;
-  background: #f8f9fa;
-  color: #999;
-  font-size: 0.8rem;
-  text-align: center;
-  border-bottom: 1px solid #eee;
+  padding: 0.25rem 0.5rem;
+  background: #222;
+  color: #00ff00;
+  font-size: 0.7rem;
+  text-align: left;
+  border-bottom: 2px solid #00ff00;
+  font-family: inherit;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem;
-  border-bottom: 1px solid #eee;
-  background: #f8f9fa;
+  padding: 0.5rem;
+  border-bottom: 2px solid #00ff00;
+  background: #222;
+  color: #00ff00;
+  font-size: 0.9rem;
 }
 
 .timer {
-  font-family: monospace;
-  font-size: 1.2rem;
+  font-family: inherit;
+  font-size: 1rem;
   font-weight: bold;
+  color: #00ff00;
 }
 
 .messages {
   flex: 1;
   overflow-y: auto;
-  padding: 1rem;
+  padding: 0.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.3rem;
+  background: #181818;
 }
 
 .message-wrapper {
@@ -430,33 +480,42 @@ onUnmounted(() => {
 }
 
 .message-bubble {
-  max-width: 70%;
-  padding: 0.75rem 1rem;
-  border-radius: 18px;
+  max-width: 80%;
+  padding: 0.5rem 0.7rem;
+  border-radius: 0;
   word-wrap: break-word;
+  background: #222;
+  color: #00ff00;
+  font-family: inherit;
+  border: 2px solid #00ff00;
+  box-shadow: none;
+  font-size: 0.8rem;
 }
 
 .own-message .message-bubble {
-  background: #007bff;
-  color: white;
-  border-bottom-right-radius: 4px;
+  background: #181818;
+  color: #00ff00;
+  border: 2px solid #00ff00;
 }
 
 .other-message .message-bubble {
-  background: #f1f3f4;
-  color: #333;
-  border-bottom-left-radius: 4px;
+  background: #222;
+  color: #00ff00;
+  border: 2px solid #00ff00;
 }
 
 .message-content {
-  margin-bottom: 0.25rem;
-  line-height: 1.4;
+  margin-bottom: 0.1rem;
+  line-height: 1.2;
+  font-family: inherit;
 }
 
 .message-time {
-  font-size: 0.7rem;
+  font-size: 0.6rem;
   opacity: 0.7;
   text-align: right;
+  color: #00ff00;
+  font-family: inherit;
 }
 
 .other-message .message-time {
@@ -465,12 +524,12 @@ onUnmounted(() => {
 
 .no-messages {
   text-align: center;
-  color: #999;
+  color: #00ff00;
   font-style: italic;
-  padding: 2rem;
+  padding: 1rem;
+  font-family: inherit;
+  font-size: 0.8rem;
 }
-
-
 
 .messages {
   position: relative;
@@ -481,75 +540,90 @@ onUnmounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 2rem;
+  padding: 1rem;
+  background: #181818;
 }
 
 .no-room-message {
   text-align: center;
-  color: #666;
+  color: #00ff00;
+  font-size: 0.8rem;
 }
 
 .no-room-message h2 {
-  font-size: 1.5rem;
-  margin-bottom: 2rem;
-  color: #555;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  color: #00ff00;
 }
 
 .reset-timer {
-  background: #f8f9fa;
-  padding: 1rem;
-  border-radius: 8px;
-  border: 1px solid #dee2e6;
+  background: #222;
+  padding: 0.5rem;
+  border-radius: 0;
+  border: 2px solid #00ff00;
+  font-size: 0.8rem;
 }
 
 .reset-timer p {
   margin: 0;
-  font-size: 1.1rem;
-  font-family: monospace;
-  color: #007bff;
+  font-size: 0.8rem;
+  font-family: inherit;
+  color: #00ff00;
 }
 
 .input-area {
   display: flex;
-  padding: 1rem;
-  gap: 1rem;
-  border-top: 1px solid #eee;
+  padding: 0.5rem;
+  gap: 0.5rem;
+  border-top: 2px solid #00ff00;
+  background: #222;
 }
 
 .input-area textarea {
   flex: 1;
-  padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 0.3rem;
+  border: 2px solid #00ff00;
+  border-radius: 0;
   resize: none;
-  min-height: 60px;
+  min-height: 40px;
+  background: #181818;
+  color: #00ff00;
+  font-family: inherit;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
 }
 
 .input-area button {
-  padding: 0.5rem 1rem;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
+  padding: 0.3rem 0.7rem;
+  background: #181818;
+  color: #00ff00;
+  border: 2px solid #00ff00;
+  border-radius: 0;
   cursor: pointer;
+  font-family: inherit;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
 }
 
 .input-area button:disabled {
-  background: #ccc;
-  cursor: not-allowed;
+  border: 2px solid #00ff0055;
+  color: #00ff0055 !important;
 }
 
 .message-bubble.processing {
-  background: #e3f2fd !important;
-  border: 1px solid #2196f3;
+  background: #222 !important;
+  border: 2px dashed #00ff00;
+  color: #00ff00;
 }
 
 .processing-indicator {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #1976d2;
+  color: #00ff00;
   font-style: italic;
+  font-family: inherit;
+  font-size: 0.8rem;
 }
 
 .dot-animation {
@@ -559,6 +633,7 @@ onUnmounted(() => {
 .dot-animation span {
   animation: blink 1.4s infinite;
   animation-fill-mode: both;
+  color: #00ff00;
 }
 
 .dot-animation span:nth-child(2) {
@@ -576,5 +651,15 @@ onUnmounted(() => {
   40% {
     opacity: 1;
   }
+}
+
+/* スクロールバーもドット風に */
+.messages::-webkit-scrollbar {
+  width: 8px;
+  background: #222;
+}
+.messages::-webkit-scrollbar-thumb {
+  background: #00ff00;
+  border-radius: 0;
 }
 </style>
