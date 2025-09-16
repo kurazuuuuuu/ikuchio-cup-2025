@@ -3,9 +3,16 @@ import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
 from routers import users, rooms
 import json
+import os
 from starlette.websockets import WebSocketState
 
-app = FastAPI()
+# 本番環境では/docsを無効化
+is_production = os.environ.get('ENVIRONMENT') == 'production'
+app = FastAPI(
+    docs_url=None if is_production else "/docs",
+    redoc_url=None if is_production else "/redoc",
+    openapi_url=None if is_production else "/openapi.json"
+)
 
 # CORS設定を簡素化
 app.add_middleware(
