@@ -4,35 +4,35 @@ import datetime
 db = gcp.firestore.db
 
 def firestore_create_user(fingerprint_id: str = "0000"):
+    user_id = f"user_{fingerprint_id}"
+    
     # 既存ユーザーをチェック
     existing_user = firestore_get_user(fingerprint_id)
     if existing_user:
-        return existing_user  # 既存ユーザーのデータをそのまま返す
+        return existing_user
     
-    # 新規ユーザー作成（ルームはリセット時にのみ割り当て）
+    # 新規ユーザー作成
     user_data = {
         "fingerprint_id": fingerprint_id,
         "created_at": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9))),
-        "room_id": None  # 新規ユーザーはリセットまでルームなし
+        "room_id": None
     }
 
-    db.collection("users").document().set(user_data)
-    print(f"Debug: Created new user user_{fingerprint_id} without room assignment")
+    db.collection("users").document(user_id).set(user_data)
+    print(f"Debug: Created new user {user_id} without room assignment")
     return user_data
 
 def firestore_get_user(fingerprint_id: str = "0000"):
-    users_ref = db.collection("users")
-    query = users_ref.where("fingerprint_id", "==", fingerprint_id)
-    docs = query.get()
+    user_id = f"user_{fingerprint_id}"
+    user_doc = db.collection("users").document(user_id).get()
     
-    if docs:
-        user_doc = docs[0]
+    if user_doc.exists:
         user_data = user_doc.to_dict()
         room_id = user_data.get('room_id', 'None') if user_data else 'None'
-        print(f"Debug: Retrieved user user_{fingerprint_id} with room_id: {room_id}")
+        print(f"Debug: Retrieved user {user_id} with room_id: {room_id}")
         return user_data
     else:
-        print(f"Debug: User user_{fingerprint_id} not found")
+        print(f"Debug: User {user_id} not found")
         return None
 
 def firestore_get_all_users():

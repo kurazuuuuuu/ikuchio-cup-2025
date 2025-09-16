@@ -163,33 +163,13 @@ def _create_pair_rooms(users_list):
         i += 2
     return created_rooms
 
-def _create_solo_room(users_list):
-    """Create room for the last user if odd number of users"""
+def _handle_odd_user(users_list):
+    """Handle the last user if odd number of users - leave without room"""
     if len(users_list) % 2 == 1:
         last_user_dict = users_list[-1].to_dict()
         if last_user_dict and "fingerprint_id" in last_user_dict:
             user_id = last_user_dict["fingerprint_id"]
-            
-            room_id = f"room_{uuid.uuid4()}"
-            room_data = {
-                "id": room_id,
-                "created_at": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9))),
-                "users": [f"user_{user_id}"]
-            }
-            
-            try:
-                db.collection("rooms").document(room_id).set(room_data)
-            except Exception as e:
-                print(f"Error creating solo room: {e}")
-                return None
-            
-            try:
-                users_list[-1].reference.update({"room_id": room_id})
-                print(f"Debug: Assigned solo room {room_id} to user user_{user_id}")
-            except Exception as e:
-                print(f"Debug: Failed to assign room_id to solo user: {e}")
-            
-            return room_data
+            print(f"Debug: User user_{user_id} left without room assignment (odd number)")
     return None
 
 def firestore_reset_all_rooms():
@@ -206,8 +186,6 @@ def firestore_reset_all_rooms():
     random.shuffle(users_list)
     
     created_rooms = _create_pair_rooms(users_list)
-    solo_room = _create_solo_room(users_list)
-    if solo_room:
-        created_rooms.append(solo_room)
+    _handle_odd_user(users_list)
     
     return {"message": "All rooms have been reset and new rooms created", "created_rooms": len(created_rooms)}
