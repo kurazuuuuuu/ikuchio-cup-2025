@@ -30,8 +30,8 @@ steps:
       - '-t'
       - 'gcr.io/$PROJECT_ID/ikuchio-backend:$COMMIT_SHA'
       - '-f'
-      - 'backend/Dockerfile'
-      - '.'
+      - 'backend/ikuchio-cup-2025/Dockerfile'
+      - 'backend/ikuchio-cup-2025'
     id: 'backend-docker-build'
     waitFor: ['backend-lint']
 
@@ -42,8 +42,8 @@ steps:
       - '-t'
       - 'gcr.io/$PROJECT_ID/ikuchio-frontend:$COMMIT_SHA'
       - '-f'
-      - 'frontend/Dockerfile'
-      - '.'
+      - 'frontend/ikuchio-cup-2025/Dockerfile'
+      - 'frontend/ikuchio-cup-2025'
     id: 'frontend-docker-build'
     waitFor: ['frontend-build']
 

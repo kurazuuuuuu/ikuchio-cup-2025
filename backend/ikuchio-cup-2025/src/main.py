@@ -20,9 +20,11 @@ app.add_middleware(
 @app.get("/health")
 def health_check():
     try:
-        # Secret Managerのテストはしない
         return {"message": "Hello!", "status": "ok"}
     except Exception as e:
+        print(f"[Health] Error: {str(e)}")
+        import traceback
+        print(f"[Health] Traceback: {traceback.format_exc()}")
         return {"message": f"Health check failed: {str(e)}", "status": "error"}
 
 @app.get("/api/health")
@@ -117,8 +119,15 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
         except (ValueError, KeyError):
             pass
 
-app.include_router(users.users_router)
-app.include_router(rooms.rooms_router)
+try:
+    app.include_router(users.users_router)
+    app.include_router(rooms.rooms_router)
+    print("[Startup] Routers loaded successfully")
+except Exception as e:
+    print(f"[Startup] Error loading routers: {str(e)}")
+    import traceback
+    print(f"[Startup] Traceback: {traceback.format_exc()}")
+    raise e
 
 if __name__ == "__main__":
     import uvicorn
