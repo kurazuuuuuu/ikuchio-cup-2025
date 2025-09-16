@@ -18,7 +18,7 @@ RUN npm run build-only
 RUN npm install -g serve
 
 # Expose port
-EXPOSE 3000
+EXPOSE 80
 
 # Start command
-CMD ["serve", "-s", "dist", "-l", "3000"]
+CMD ["serve", "-s", "dist", "-l", "80"]
