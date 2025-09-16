@@ -6,9 +6,9 @@ import random
 db = gcp.firestore.db
 
 def create_room_with_random_users():
-    # 全ユーザーを取得
+    # 全ユーザーを取得（効率化のため制限付き）
     users_ref = db.collection("users")
-    users_docs = users_ref.get()
+    users_docs = users_ref.limit(10).get()  # 2人必要だが余裕を持って10人取得
     
     if len(users_docs) < 2:
         return None
@@ -26,12 +26,16 @@ def create_room_with_random_users():
     room_id = f"room_{uuid.uuid4()}"
     room_data = {
         "id": room_id,
-        "created_at": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9))),
+        "created_at": datetime.datetime.now(datetime.timezone.utc),
         "users": [f"user_{user1_id}", f"user_{user2_id}"]
     }
     
-    db.collection("rooms").document(room_id).set(room_data)
-    return room_data
+    try:
+        db.collection("rooms").document(room_id).set(room_data)
+        return room_data
+    except Exception as e:
+        print(f"Error creating room: {e}")
+        return None
 
 def firestore_get_room(room_id: str):
     room_doc = db.collection("rooms").document(room_id).get()
@@ -45,15 +49,11 @@ def firestore_get_all_rooms():
     rooms_ref = db.collection("rooms")
     docs = rooms_ref.get()
     
-    rooms = []
-    for doc in docs:
-        rooms.append(doc.to_dict())
-    
-    return rooms
+    return [doc.to_dict() for doc in docs if doc.to_dict()]
 
 def firestore_send_message(room_id: str, sender_id: str, original_text: str):
     turn_id = f"turn_{uuid.uuid4()}"
-    processed_text = original_text  # ユーザー名を削除
+    processed_text = original_text  # 現在は元のテキストをそのまま使用
     now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
     
     turn_data = {
@@ -66,12 +66,16 @@ def firestore_send_message(room_id: str, sender_id: str, original_text: str):
         "processed_at": now.isoformat()
     }
     
-    db.collection("turns").document(turn_id).set(turn_data)
-    return turn_data
+    try:
+        db.collection("turns").document(turn_id).set(turn_data)
+        return turn_data
+    except Exception as e:
+        print(f"Error sending message: {e}")
+        return None
 
 def firestore_get_messages(room_id: str):
     turns_ref = db.collection("turns")
-    query = turns_ref.where("room_id", "==", room_id)
+    query = turns_ref.where("room_id", "==", room_id).limit(100)
     docs = query.get()
     
     messages = []
@@ -88,12 +92,14 @@ def firestore_get_messages(room_id: str):
     # ソート処理
     try:
         messages.sort(key=lambda x: x.get('created_at', ''))
-    except:
-        pass  # ソートに失敗した場合はそのまま返す
+    except (TypeError, ValueError, KeyError) as e:
+        print(f"Warning: Failed to sort messages: {e}")
+        # ソートに失敗した場合はそのまま返す
     
     return messages
 
-def firestore_reset_all_rooms():
+def _clear_all_data():
+    """Delete all rooms and messages from database"""
     # 全ルーム削除
     rooms_ref = db.collection("rooms")
     docs = rooms_ref.get()
@@ -105,30 +111,24 @@ def firestore_reset_all_rooms():
     turn_docs = turns_ref.get()
     for doc in turn_docs:
         doc.reference.delete()
-    
-    # 全ユーザーのroom_idをクリア
+
+def _clear_user_room_assignments():
+    """Clear room_id from all users and return user documents"""
     users_ref = db.collection("users")
     user_docs = users_ref.get()
     for user_doc in user_docs:
         try:
             user_doc.reference.update({"room_id": None})
-            print(f"Debug: Cleared room_id for user user_{user_doc.to_dict().get('fingerprint_id', 'unknown')}")
+            user_data = user_doc.to_dict()
+            fingerprint_id = user_data.get('fingerprint_id', 'unknown') if user_data else 'unknown'
+            print(f"Debug: Cleared room_id for user user_{fingerprint_id}")
         except Exception as e:
             print(f"Debug: Failed to clear room_id: {e}")
-    
-    print(f"Debug: Found {len(user_docs)} users for room creation")
-    
-    # ユーザーが2人未満の場合はルームを作成しない
-    if len(user_docs) < 2:
-        return {"message": "Not enough users to create rooms", "created_rooms": 0}
-    
-    # ユーザーをペアにしてルーム作成（奇数の場合は1人ルームも作成）
-    users_list = [doc for doc in user_docs]
-    random.shuffle(users_list)
-    
+    return user_docs
+
+def _create_pair_rooms(users_list):
+    """Create rooms for user pairs"""
     created_rooms = []
-    
-    # 2人ルームを作成
     i = 0
     while i < len(users_list) - 1:
         user1_dict = users_list[i].to_dict()
@@ -138,7 +138,6 @@ def firestore_reset_all_rooms():
             user1_id = user1_dict["fingerprint_id"]
             user2_id = user2_dict["fingerprint_id"]
             
-            # 2人ルーム作成
             room_id = f"room_{uuid.uuid4()}"
             room_data = {
                 "id": room_id,
@@ -146,9 +145,12 @@ def firestore_reset_all_rooms():
                 "users": [f"user_{user1_id}", f"user_{user2_id}"]
             }
             
-            db.collection("rooms").document(room_id).set(room_data)
+            try:
+                db.collection("rooms").document(room_id).set(room_data)
+            except Exception as e:
+                print(f"Error creating pair room: {e}")
+                continue
             
-            # ユーザーにroom_idを割り当て
             try:
                 users_list[i].reference.update({"room_id": room_id})
                 users_list[i + 1].reference.update({"room_id": room_id})
@@ -159,31 +161,53 @@ def firestore_reset_all_rooms():
             created_rooms.append(room_data)
         
         i += 2
-    
-    # 奇数ユーザーの場合、最後の1人用のルームを作成
+    return created_rooms
+
+def _create_solo_room(users_list):
+    """Create room for the last user if odd number of users"""
     if len(users_list) % 2 == 1:
         last_user_dict = users_list[-1].to_dict()
         if last_user_dict and "fingerprint_id" in last_user_dict:
             user_id = last_user_dict["fingerprint_id"]
             
-            # 1人ルーム作成
             room_id = f"room_{uuid.uuid4()}"
             room_data = {
                 "id": room_id,
                 "created_at": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9))),
-                "users": [f"user_{user_id}"]  # 1人だけ
+                "users": [f"user_{user_id}"]
             }
             
-            db.collection("rooms").document(room_id).set(room_data)
+            try:
+                db.collection("rooms").document(room_id).set(room_data)
+            except Exception as e:
+                print(f"Error creating solo room: {e}")
+                return None
             
-            # ユーザーにroom_idを割り当て
             try:
                 users_list[-1].reference.update({"room_id": room_id})
                 print(f"Debug: Assigned solo room {room_id} to user user_{user_id}")
             except Exception as e:
                 print(f"Debug: Failed to assign room_id to solo user: {e}")
             
-            created_rooms.append(room_data)
-            print(f"Debug: Created room {room_id} for users {user1_id[:8]} and {user2_id[:8]}")
+            return room_data
+    return None
+
+def firestore_reset_all_rooms():
+    """Reset all rooms and create new room assignments"""
+    _clear_all_data()
+    user_docs = _clear_user_room_assignments()
+    
+    print(f"Debug: Found {len(user_docs)} users for room creation")
+    
+    if len(user_docs) < 2:
+        return {"message": "Not enough users to create rooms", "created_rooms": 0}
+    
+    users_list = [doc for doc in user_docs]
+    random.shuffle(users_list)
+    
+    created_rooms = _create_pair_rooms(users_list)
+    solo_room = _create_solo_room(users_list)
+    if solo_room:
+        created_rooms.append(solo_room)
     
     return {"message": "All rooms have been reset and new rooms created", "created_rooms": len(created_rooms)}
