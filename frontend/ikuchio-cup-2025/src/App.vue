@@ -62,6 +62,7 @@ interface Message {
   id: string
   processed_text: string
   created_at: string
+  original_sender_id: string
 }
 
 interface User {
@@ -361,6 +362,129 @@ onUnmounted(() => {
 
 .messages {
   flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.message-wrapper {
+  display: flex;
+  width: 100%;
+}
+
+.own-message {
+  justify-content: flex-end;
+}
+
+.other-message {
+  justify-content: flex-start;
+}
+
+.message-bubble {
+  max-width: 70%;
+  padding: 0.75rem 1rem;
+  border-radius: 18px;
+  word-wrap: break-word;
+}
+
+.own-message .message-bubble {
+  background: #007bff;
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.other-message .message-bubble {
+  background: #f1f3f4;
+  color: #333;
+  border-bottom-left-radius: 4px;
+}
+
+.message-content {
+  margin-bottom: 0.25rem;
+  line-height: 1.4;
+}
+
+.message-time {
+  font-size: 0.7rem;
+  opacity: 0.7;
+  text-align: right;
+}
+
+.other-message .message-time {
+  text-align: left;
+}
+
+.no-messages {
+  text-align: center;
+  color: #999;
+  font-style: italic;
+  padding: 2rem;
+}
+
+.no-room-screen {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+}
+
+.no-room-message {
+  text-align: center;
+  color: #666;
+}
+
+.no-room-message h2 {
+  font-size: 1.5rem;
+  margin-bottom: 2rem;
+  color: #555;
+}
+
+.reset-timer {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.reset-timer p {
+  margin: 0;
+  font-size: 1.1rem;
+  font-family: monospace;
+  color: #007bff;
+}
+
+.input-area {
+  display: flex;
+  padding: 1rem;
+  gap: 1rem;
+  border-top: 1px solid #eee;
+}
+
+.input-area textarea {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  resize: none;
+  min-height: 60px;
+}
+
+.input-area button {
+  padding: 0.5rem 1rem;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.input-area button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+};
   overflow-y: auto;
   padding: 1rem;
   display: flex;
