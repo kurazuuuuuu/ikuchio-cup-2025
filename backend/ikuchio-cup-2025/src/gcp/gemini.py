@@ -11,16 +11,24 @@ API_KEY = None
 def get_api_key():
     global API_KEY
     if API_KEY is None:
-        try:
-            print("[Gemini Debug] Attempting to load API key from Secret Manager...")
-            secret_util = SecretManagerUtil()
-            API_KEY = secret_util.get_secret("88236233617", "google-vertexai-api-key")
-            print(f"[Gemini Debug] API key loaded successfully, length: {len(API_KEY) if API_KEY else 0}")
-        except Exception as e:
-            print(f"[Gemini Debug] Failed to load API key: {type(e).__name__}: {str(e)}")
-            import traceback
-            print(f"[Gemini Debug] Full traceback: {traceback.format_exc()}")
-            API_KEY = "fallback"
+        # 環境変数から取得を優先
+        env_api_key = os.environ.get('API_KEY')
+        if env_api_key:
+            print("[Gemini Debug] Using API key from environment variable")
+            API_KEY = env_api_key
+            print(f"[Gemini Debug] API key loaded from env, length: {len(API_KEY)}")
+        else:
+            # Secret Managerから取得
+            try:
+                print("[Gemini Debug] Attempting to load API key from Secret Manager...")
+                secret_util = SecretManagerUtil()
+                API_KEY = secret_util.get_secret("88236233617", "google-vertexai-api-key")
+                print(f"[Gemini Debug] API key loaded from Secret Manager, length: {len(API_KEY) if API_KEY else 0}")
+            except Exception as e:
+                print(f"[Gemini Debug] Failed to load API key: {type(e).__name__}: {str(e)}")
+                import traceback
+                print(f"[Gemini Debug] Full traceback: {traceback.format_exc()}")
+                API_KEY = "fallback"
     elif API_KEY == "fallback":
         print("[Gemini Debug] API key is in fallback state, not retrying")
     return API_KEY
