@@ -20,9 +20,16 @@ FROM nginx:alpine
 # Copy built files
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy nginx config
-COPY frontend/nginx.conf /etc/nginx/nginx.conf
+# Copy nginx config template
+COPY frontend/nginx.conf /etc/nginx/nginx.conf.template
 
-EXPOSE 80
+# Install envsubst for environment variable substitution
+RUN apk add --no-cache gettext
 
-CMD ["nginx", "-g", "daemon off;"]
+# Create startup script
+RUN echo '#!/bin/sh' > /start.sh && \
+    echo 'envsubst "\$PORT" < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf' >> /start.sh && \
+    echo 'nginx -g "daemon off;"' >> /start.sh && \
+    chmod +x /start.sh
+
+CMD ["/start.sh"]
