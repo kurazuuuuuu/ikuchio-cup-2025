@@ -112,7 +112,7 @@ def firestore_reset_all_rooms():
     for user_doc in user_docs:
         try:
             user_doc.reference.update({"room_id": None})
-            print(f"Debug: Cleared room_id for user {user_doc.to_dict().get('fingerprint_id', 'unknown')[:8]}")
+            print(f"Debug: Cleared room_id for user user_{user_doc.to_dict().get('fingerprint_id', 'unknown')}")
         except Exception as e:
             print(f"Debug: Failed to clear room_id: {e}")
     
@@ -122,12 +122,15 @@ def firestore_reset_all_rooms():
     if len(user_docs) < 2:
         return {"message": "Not enough users to create rooms", "created_rooms": 0}
     
-    # ユーザーをペアにしてルーム作成
+    # ユーザーをペアにしてルーム作成（奇数の場合は1人ルームも作成）
     users_list = [doc for doc in user_docs]
     random.shuffle(users_list)
     
     created_rooms = []
-    for i in range(0, len(users_list) - 1, 2):
+    
+    # 2人ルームを作成
+    i = 0
+    while i < len(users_list) - 1:
         user1_dict = users_list[i].to_dict()
         user2_dict = users_list[i + 1].to_dict()
         
@@ -135,7 +138,7 @@ def firestore_reset_all_rooms():
             user1_id = user1_dict["fingerprint_id"]
             user2_id = user2_dict["fingerprint_id"]
             
-            # ルーム作成
+            # 2人ルーム作成
             room_id = f"room_{uuid.uuid4()}"
             room_data = {
                 "id": room_id,
@@ -149,9 +152,36 @@ def firestore_reset_all_rooms():
             try:
                 users_list[i].reference.update({"room_id": room_id})
                 users_list[i + 1].reference.update({"room_id": room_id})
-                print(f"Debug: Assigned room {room_id} to users {user1_id[:8]} and {user2_id[:8]}")
+                print(f"Debug: Assigned room {room_id} to users user_{user1_id} and user_{user2_id}")
             except Exception as e:
                 print(f"Debug: Failed to assign room_id: {e}")
+            
+            created_rooms.append(room_data)
+        
+        i += 2
+    
+    # 奇数ユーザーの場合、最後の1人用のルームを作成
+    if len(users_list) % 2 == 1:
+        last_user_dict = users_list[-1].to_dict()
+        if last_user_dict and "fingerprint_id" in last_user_dict:
+            user_id = last_user_dict["fingerprint_id"]
+            
+            # 1人ルーム作成
+            room_id = f"room_{uuid.uuid4()}"
+            room_data = {
+                "id": room_id,
+                "created_at": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9))),
+                "users": [f"user_{user_id}"]  # 1人だけ
+            }
+            
+            db.collection("rooms").document(room_id).set(room_data)
+            
+            # ユーザーにroom_idを割り当て
+            try:
+                users_list[-1].reference.update({"room_id": room_id})
+                print(f"Debug: Assigned solo room {room_id} to user user_{user_id}")
+            except Exception as e:
+                print(f"Debug: Failed to assign room_id to solo user: {e}")
             
             created_rooms.append(room_data)
             print(f"Debug: Created room {room_id} for users {user1_id[:8]} and {user2_id[:8]}")

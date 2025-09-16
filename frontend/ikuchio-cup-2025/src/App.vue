@@ -26,8 +26,14 @@
         </div>
         
         <div class="messages" ref="messagesContainer">
+          <!-- 1人ルームの場合の背景メッセージ -->
+          <div v-if="isSoloRoom" class="solo-room-background">
+            ひとりぼっち...
+          </div>
+          
           <div v-if="messages.length === 0" class="no-messages">
-            まだメッセージがありません。最初のメッセージを送ってみましょう！
+            <span v-if="!isSoloRoom">まだメッセージがありません。最初のメッセージを送ってみましょう！</span>
+            <span v-else>今日はひとりの時間です。思いを書いてみましょう。</span>
           </div>
           <div v-for="message in messages" :key="message.id" 
                 :class="['message-wrapper', message.original_sender_id === user?.fingerprint_id ? 'own-message' : 'other-message']">
@@ -79,6 +85,7 @@ const newMessage = ref<string>('')
 const sending = ref<boolean>(false)
 const timeLeft = ref<string>('')
 const messagesContainer = ref<HTMLElement>()
+const isSoloRoom = ref<boolean>(false)
 
 let timerInterval: number | null = null
 let websocket: WebSocket | null = null
@@ -114,6 +121,8 @@ const login = async () => {
     user.value = userData
     roomId.value = userData.room_id || ''
     
+    console.log(`Debug: User logged in - ID: ${userData.fingerprint_id.slice(0, 8)}, Room: ${userData.room_id || 'None'}`)
+    
     if (userData.room_id) {
       connectWebSocket()
     }
@@ -130,6 +139,30 @@ const login = async () => {
     }
     
     alert(`ログインに失敗しました: ${errorMessage}\n\nデバッグ情報:\nフィンガープリント: ${fingerprint}\nAPI URL: ${API_BASE}`)
+  }
+}
+
+const refreshUserData = async () => {
+  if (!user.value) return
+  
+  try {
+    const response = await fetch(`${API_BASE}/users?fingerprint_id=${user.value.fingerprint_id}`)
+    if (response.ok) {
+      const userData = await response.json()
+      if (userData && userData.fingerprint_id) {
+        const oldRoomId = roomId.value
+        user.value = userData
+        roomId.value = userData.room_id || ''
+        
+        console.log(`Debug: User data refreshed - Room changed from ${oldRoomId || 'None'} to ${userData.room_id || 'None'}`)
+        
+        if (userData.room_id && userData.room_id !== oldRoomId) {
+          connectWebSocket()
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Failed to refresh user data:', error)
   }
 }
 
@@ -177,8 +210,32 @@ const fetchMessages = async () => {
     if (response.ok) {
       const data = await response.json()
       messages.value = Array.isArray(data) ? data : []
+      
+      // 1人ルームかどうかを判定（自分以外のメッセージがあるかどうか）
+      const otherMessages = messages.value.filter(msg => msg.original_sender_id !== user.value?.fingerprint_id)
+      isSoloRoom.value = otherMessages.length === 0 && messages.value.length > 0
+      
+      // メッセージがない場合はルーム情報で判定
+      if (messages.value.length === 0) {
+        checkIfSoloRoom()
+      }
+      
       await nextTick()
       scrollToBottom()
+    }
+  } catch (error) {
+    // サイレントにエラーを処理
+  }
+}
+
+const checkIfSoloRoom = async () => {
+  if (!roomId.value) return
+  
+  try {
+    const response = await fetch(`${API_BASE}/rooms/${roomId.value}`)
+    if (response.ok) {
+      const roomData = await response.json()
+      isSoloRoom.value = roomData.users && roomData.users.length === 1
     }
   } catch (error) {
     // サイレントにエラーを処理
@@ -382,6 +439,22 @@ onUnmounted(() => {
   color: #999;
   font-style: italic;
   padding: 2rem;
+}
+
+.solo-room-background {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2rem;
+  color: #ddd;
+  font-weight: bold;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.messages {
+  position: relative;
 }
 
 .no-room-screen {
