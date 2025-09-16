@@ -28,7 +28,8 @@ def firestore_get_user(fingerprint_id: str = "0000"):
     if docs:
         user_doc = docs[0]
         user_data = user_doc.to_dict()
-        print(f"Debug: Retrieved user user_{fingerprint_id} with room_id: {user_data.get('room_id', 'None')}")
+        room_id = user_data.get('room_id', 'None') if user_data else 'None'
+        print(f"Debug: Retrieved user user_{fingerprint_id} with room_id: {room_id}")
         return user_data
     else:
         print(f"Debug: User user_{fingerprint_id} not found")

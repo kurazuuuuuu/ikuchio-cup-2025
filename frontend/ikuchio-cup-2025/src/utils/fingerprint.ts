@@ -22,7 +22,7 @@ export function generateFingerprint(): string {
       screen.width + 'x' + screen.height + 'x' + screen.colorDepth || 'unknown',
       new Date().getTimezoneOffset() || 0,
       navigator.hardwareConcurrency || 'unknown',
-      navigator.deviceMemory || 'unknown',
+      (navigator as any).deviceMemory || 'unknown',
       navigator.platform || 'unknown',
       randomSeed, // ランダム要素を追加
       canvas.toDataURL()
