@@ -1,15 +1,34 @@
 <template>
   <div id="app">
+    <div class="mouse-noise" :style="{ left: mouseX + 'px', top: mouseY + 'px' }"></div>
     <div v-if="!user" class="login-screen">
-      <h1>24時間でさようなら</h1>
-      <button @click="login">入室する</button>
+      <h1 class="typewriter">24時間でさようなら</h1>
+      <button @click="login">Login</button>
     </div>
     
-    <div v-else class="chat-screen">
-      <div class="user-id">ユーザーID: {{ user.firebase_uid }}</div>
+    <div v-else class="chat-screen" :class="{ 'loading-completed': loadingCompleted }">
+      <div v-if="!loading" class="top-bar">
+        <div class="user-info">
+          <div class="user-id">ユーザーID： {{ user.firebase_uid }}</div>
+        </div>
+        <div class="controls">
+          <div class="timer">{{ timeLeft }}</div>
+          <button @click="logout" class="logout-btn">EXIT</button>
+        </div>
+      </div>
+      
+      <!-- ローディング中 -->
+      <div v-if="loading" class="loading-screen">
+        <div class="linux-loading">
+          <div class="loading-line typewriter-line line1">[ OK ] Get User#{{ user.firebase_uid }}...</div>
+          <div class="loading-line typewriter-line line2">[ OK ] Connecting to server...</div>
+          <div class="loading-line typewriter-line line3">[ OK ] Initializing user session...</div>
+          <div class="loading-line typewriter-line line4 current">[ .. ] Loading chat interface Room#{{ roomId || 'None' }}<span class="cursor">_</span></div>
+        </div>
+      </div>
       
       <!-- ルームが存在しない場合 -->
-      <div v-if="!roomId" class="no-room-screen">
+      <div v-else-if="!roomId" class="no-room-screen">
         <div class="no-room-message">
           <h2>まだあなたの相手は見つかっていないようですよ...</h2>
           <div class="reset-timer">
@@ -19,11 +38,7 @@
       </div>
       
       <!-- ルームが存在する場合 -->
-      <div v-else>
-        <div class="header">
-          <h2>Room: {{ roomId }}</h2>
-          <div class="timer">{{ timeLeft }}</div>
-        </div>
+      <div v-else class="chat-container">
         
         <div class="messages" ref="messagesContainer">
           <div v-if="messages.length === 0" class="no-messages">
@@ -52,14 +67,17 @@
             </div>
           </div>
         </div>
-        
-        <div class="input-area">
-          <textarea 
-            v-model="newMessage" 
-            @keydown="handleKeydown"
-            placeholder="メッセージを入力..."
-            :disabled="sending"
-          ></textarea>
+      </div>
+      
+      <div v-if="roomId && !loading" class="input-area">
+        <textarea 
+          v-model="newMessage" 
+          @keydown="handleKeydown"
+          placeholder="メッセージを入力..."
+          :disabled="sending"
+        ></textarea>
+        <div class="send-button-container">
+          <div class="tutorial-text">Cmd+Enter: 送信 | Enter: 改行</div>
           <button @click="sendMessage" :disabled="!newMessage.trim() || sending">
             {{ sending ? '送信中...' : '送信' }}
           </button>
@@ -104,11 +122,16 @@ const sending = ref<boolean>(false)
 const timeLeft = ref<string>('')
 const messagesContainer = ref<HTMLElement>()
 const isSoloRoom = ref<boolean>(false)
+const loading = ref<boolean>(false)
+const loadingCompleted = ref<boolean>(false)
+const mouseX = ref<number>(0)
+const mouseY = ref<number>(0)
 
 let timerInterval: number | null = null
 let websocket: WebSocket | null = null
 
 const login = async () => {
+  loading.value = true
   let firebaseAuth: FirebaseAuthResult | null = null
   try {
     // Firebase匿名認証
@@ -146,6 +169,9 @@ const login = async () => {
     }
     startTimer()
     
+    // 5秒間のローディング演出
+    await new Promise(resolve => setTimeout(resolve, 5000))
+    
   } catch (error) {
     console.error('Login failed:', error)
     let errorMessage = '不明なエラー'
@@ -157,10 +183,20 @@ const login = async () => {
     }
     
     alert(`ログインに失敗しました: ${errorMessage}\n\nデバッグ情報:\nFirebase UID: ${firebaseAuth?.uid || 'None'}\nAPI URL: ${API_BASE}`)
+  } finally {
+    // 走査アニメーションを先に開始
+    loadingCompleted.value = true
+    
+    // 少し待ってからローディングを終了
+    setTimeout(() => {
+      loading.value = false
+    }, 100)
   }
 }
 
 const refreshUserData = async () => {
+    
+
   if (!user.value) return
   
   try {
@@ -346,10 +382,36 @@ const formatTime = (timestamp: string) => {
 }
 
 const handleKeydown = (event: KeyboardEvent) => {
-  if (event.key === 'Enter' && !event.shiftKey) {
+  if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
     event.preventDefault()
     sendMessage()
   }
+}
+
+const logout = () => {
+  if (timerInterval) {
+    clearInterval(timerInterval)
+  }
+  if (websocket) {
+    websocket.close()
+  }
+  user.value = null
+  roomId.value = ''
+  messages.value = []
+}
+
+let mouseThrottle = false
+const handleMouseMove = (event: MouseEvent) => {
+  if (mouseThrottle) return
+  mouseThrottle = true
+  setTimeout(() => { mouseThrottle = false }, 50)
+  mouseX.value = event.clientX
+  mouseY.value = event.clientY
+}
+
+// マウス移動イベントリスナーを追加
+if (typeof window !== 'undefined') {
+  window.addEventListener('mousemove', handleMouseMove)
 }
 
 onUnmounted(() => {
@@ -359,19 +421,112 @@ onUnmounted(() => {
   if (websocket) {
     websocket.close()
   }
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('mousemove', handleMouseMove)
+  }
 })
 </script>
 
 <style scoped>
 #app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
+  font-family: 'DotGothic16', monospace;
+  background: linear-gradient(135deg, #0a0a0a 0%, #0d0f0d 100%);
+  color: #00ff00;
   height: 100vh;
   display: flex;
   flex-direction: column;
+  text-shadow: 0 0 5px #00ff00;
+  position: relative;
+  overflow: hidden;
+  filter: contrast(1.1) brightness(1.05);
+}
+
+#app::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.3) 100%),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 1px,
+      rgba(0, 255, 0, 0.08) 1px,
+      rgba(0, 255, 0, 0.08) 3px
+    );
+  pointer-events: none;
+  z-index: 9999;
+  animation: flicker 0.3s infinite linear alternate, scanline 16s linear infinite;
+  border-radius: 15px;
+  box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.8);
+  will-change: opacity, filter;
+  transform: translateZ(0);
+}
+
+#app .mouse-noise {
+  content: '';
+  position: fixed;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 10000;
+  background: 
+    radial-gradient(circle, 
+      rgba(255, 255, 255, 0.1) 0%, 
+      rgba(0, 255, 0, 0.05) 30%, 
+      transparent 70%
+    );
+  animation: mouseNoise 0.2s infinite linear;
+  transform: translate(-50%, -50%) translateZ(0);
+  will-change: opacity, filter;
+}
+
+@keyframes mouseNoise {
+  0% { opacity: 0.8; filter: blur(0.5px); }
+  25% { opacity: 0.6; filter: blur(1px); }
+  50% { opacity: 0.9; filter: blur(0.3px); }
+  75% { opacity: 0.7; filter: blur(0.8px); }
+  100% { opacity: 0.8; filter: blur(0.5px); }
+}
+
+@keyframes flicker {
+  0% { opacity: 0.95; }
+  100% { opacity: 1; }
+}
+
+@keyframes scanline {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 100vh; }
+}
+
+.chat-screen, .login-screen {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+#app::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #0a0a0a;
+  z-index: 1000;
+  animation: scanReveal 2s ease-out forwards;
+}
+
+@keyframes scanReveal {
+  from {
+    clip-path: inset(0 0 0 0);
+  }
+  to {
+    clip-path: inset(100% 0 0 0);
+  }
 }
 
 .login-screen {
@@ -380,46 +535,271 @@ onUnmounted(() => {
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(135deg, #0a0a0a 0%, #0d0f0d 100%);
+  color: #00ff00;
+  position: relative;
+}
+
+.login-screen::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 255, 0, 0.03) 2px,
+    rgba(0, 255, 0, 0.03) 4px
+  );
+  pointer-events: none;
 }
 
 .login-screen h1 {
-  font-size: 2.5rem;
+  font-size: 2rem;
   margin-bottom: 2rem;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+  text-shadow: 0 0 10px #00ff00;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.typewriter {
+  font-family: 'DotGothic16', monospace;
+  display: inline-block;
+  position: relative;
+}
+
+.typewriter::after {
+  content: '_';
+  color: #00ff00;
+  animation: blink 1s infinite;
+  position: absolute;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
 }
 
 .login-screen button {
-  padding: 15px 30px;
-  font-size: 1.2rem;
-  background: rgba(255,255,255,0.2);
-  color: white;
-  border: 2px solid white;
-  border-radius: 50px;
+  padding: 12px 24px;
+  font-size: 1rem;
+  background: transparent;
+  color: #00ff00;
+  border: 2px solid #00ff00;
   cursor: pointer;
   transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
+  font-family: 'DotGothic16', monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .login-screen button:hover {
-  background: rgba(255,255,255,0.3);
-  transform: translateY(-2px);
+  background: #00ff00;
+  color: #0a0a0a;
+  box-shadow: 0 0 20px #00ff00;
 }
 
 .chat-screen {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #f5f5f5;
+  background: linear-gradient(135deg, #0a0a0a 0%, #0d0f0d 100%);
+  position: relative;
 }
 
-.user-id {
-  background: #4a90e2;
-  color: white;
-  padding: 10px;
-  font-size: 0.9rem;
+.chat-screen::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 255, 0, 0.03) 2px,
+    rgba(0, 255, 0, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.chat-screen.loading-completed::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #0a0a0a;
+  z-index: 1000;
+  animation: scanRevealChat 1s ease-out 0.1s forwards;
+  pointer-events: none;
+}
+
+@keyframes scanRevealChat {
+  from {
+    clip-path: inset(0 0 0 0);
+  }
+  to {
+    clip-path: inset(100% 0 0 0);
+  }
+}
+
+.top-bar {
+  background: #001100;
+  color: #00ff00;
+  padding: 8px 10px;
+  border-bottom: 1px solid #00ff00;
+  z-index: 2;
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-family: 'DotGothic16', monospace;
+}
+
+.user-id, .room-id {
+  font-size: 0.8rem;
   text-align: left;
+  font-family: 'DotGothic16', monospace;
+  line-height: 1.2;
+  margin: 0;
+  padding: 0;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.timer {
+  font-family: 'DotGothic16', monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffff00;
+  text-shadow: 0 0 10px #ffff00;
+}
+
+.logout-btn {
+  padding: 6px 12px;
+  background: transparent;
+  color: #ff4444;
+  border: 1px solid #ff4444;
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-family: 'DotGothic16', monospace;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+}
+
+.logout-btn:hover {
+  background: #ff4444;
+  color: #0a0a0a;
+  box-shadow: 0 0 10px #ff4444;
+}
+
+.loading-screen {
+  flex: 1;
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  z-index: 2;
+  position: relative;
+  padding: 40px 20px;
+}
+
+.linux-loading {
+  font-family: 'DotGothic16', monospace;
+  color: #00ff00;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.loading-line {
+  margin-bottom: 8px;
+  overflow: hidden;
+  white-space: nowrap;
+  width: 0;
+}
+
+.loading-line.current {
+  color: #ffff00;
+  text-shadow: 0 0 5px #ffff00;
+}
+
+.line1 {
+  animation: typewriter 1.2s steps(15, end) 0s forwards;
+}
+
+.line2 {
+  animation: typewriter 1.0s steps(12, end) 1.2s forwards;
+}
+
+.line3 {
+  animation: typewriter 1.1s steps(14, end) 2.2s forwards;
+}
+
+.line4 {
+  animation: typewriter 1.2s steps(14, end) 3.3s forwards;
+}
+
+@keyframes typewriter {
+  from {
+    width: 0;
+    opacity: 0.7;
+  }
+  to {
+    width: 100%;
+    opacity: 0.7;
+  }
+}
+
+.line4 {
+  animation: typewriter 0.8s steps(35, end) 2.1s forwards;
+}
+
+.line4.current {
+  animation: typewriter-current 1.2s steps(14, end) 3.3s forwards;
+}
+
+@keyframes typewriter-current {
+  from {
+    width: 0;
+    opacity: 1;
+  }
+  to {
+    width: 100%;
+    opacity: 1;
+  }
+}
+
+.cursor {
+  animation: blink 1s infinite;
+}
+
+.loading-info {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #004400;
+}
+
+.info-line {
+  font-size: 0.8rem;
+  color: #00aa00;
+  margin-bottom: 5px;
+  opacity: 0.8;
 }
 
 .no-room-screen {
@@ -427,56 +807,56 @@ onUnmounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+  z-index: 2;
+  position: relative;
 }
 
 .no-room-message {
   text-align: center;
-  color: #2d3436;
+  color: #00ff00;
+  border: 2px solid #00ff00;
+  padding: 2rem;
+  background: rgba(0, 17, 0, 0.8);
 }
 
 .no-room-message h2 {
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   margin-bottom: 1rem;
+  text-shadow: 0 0 10px #00ff00;
 }
 
 .reset-timer {
-  font-size: 1.2rem;
-  font-weight: bold;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffff00;
+  text-shadow: 0 0 10px #ffff00;
 }
 
-.header {
-  background: #2c3e50;
-  color: white;
-  padding: 15px;
+.chat-container {
+  flex: 1;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.header h2 {
-  margin: 0;
-  font-size: 1.2rem;
-}
-
-.timer {
-  font-family: 'Courier New', monospace;
-  font-size: 1.1rem;
-  font-weight: bold;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .messages {
   flex: 1;
   overflow-y: auto;
   padding: 20px;
-  background: #ecf0f1;
+  padding-bottom: 100px;
+  background: transparent;
+  z-index: 2;
+  position: relative;
 }
 
 .no-messages {
   text-align: center;
-  color: #7f8c8d;
+  color: #00aa00;
   font-style: italic;
   margin-top: 50px;
+  border: 1px dashed #00aa00;
+  padding: 20px;
+  background: rgba(0, 17, 0, 0.3);
 }
 
 .message-wrapper {
@@ -495,34 +875,37 @@ onUnmounted(() => {
 .message-bubble {
   max-width: 70%;
   padding: 12px 16px;
-  border-radius: 18px;
   position: relative;
   word-wrap: break-word;
+  border: 1px solid;
+  background: rgba(0, 17, 0, 0.8);
 }
 
 .own-message .message-bubble {
-  background: #4a90e2;
-  color: white;
+  border-color: #00ff00;
+  color: #00ff00;
 }
 
 .other-message .message-bubble {
-  background: white;
-  color: #2c3e50;
-  border: 1px solid #ddd;
+  border-color: #0088ff;
+  color: #0088ff;
+  text-shadow: 0 0 5px #0088ff;
 }
 
 .message-bubble.processing {
-  background: #95a5a6;
-  color: white;
+  border-color: #ffaa00;
+  color: #ffaa00;
+  text-shadow: 0 0 5px #ffaa00;
 }
 
 .message-content {
   margin-bottom: 5px;
   line-height: 1.4;
+  font-size: 0.9rem;
 }
 
 .message-time {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   opacity: 0.7;
   text-align: right;
 }
@@ -560,64 +943,197 @@ onUnmounted(() => {
 }
 
 .input-area {
-  background: white;
+  background: #001100;
   padding: 15px;
-  border-top: 1px solid #ddd;
+  border-top: 1px solid #00ff00;
   display: flex;
   gap: 10px;
+  z-index: 2;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
 }
 
 .input-area textarea {
   flex: 1;
   padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 20px;
+  border: 1px solid #00ff00;
+  background: #0a0a0a;
+  color: #00ff00;
   resize: none;
-  font-family: inherit;
-  font-size: 14px;
+  font-family: 'DotGothic16', monospace;
+  font-size: 0.9rem;
   outline: none;
   max-height: 100px;
 }
 
+.input-area textarea::placeholder {
+  color: #006600;
+}
+
 .input-area textarea:focus {
-  border-color: #4a90e2;
+  border-color: #00ff00;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
 }
 
 .input-area button {
   padding: 12px 24px;
-  background: #4a90e2;
-  color: white;
-  border: none;
-  border-radius: 20px;
+  background: transparent;
+  color: #00ff00;
+  border: 1px solid #00ff00;
   cursor: pointer;
-  font-size: 14px;
-  transition: background 0.3s ease;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  font-family: 'DotGothic16', monospace;
+  text-transform: uppercase;
 }
 
 .input-area button:hover:not(:disabled) {
-  background: #357abd;
+  background: #00ff00;
+  color: #0a0a0a;
+  box-shadow: 0 0 15px #00ff00;
 }
 
 .input-area button:disabled {
-  background: #bdc3c7;
+  border-color: #003300;
+  color: #003300;
   cursor: not-allowed;
 }
 
-/* スクロールバーのスタイリング */
+.send-button-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.tutorial-text {
+  font-size: 0.6rem;
+  color: #00aa00;
+  opacity: 0.9;
+  font-family: 'DotGothic16', monospace;
+  white-space: nowrap;
+  z-index: 10;
+  position: relative;
+  text-shadow: 0 0 3px #00aa00;
+}
+
 .messages::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 .messages::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #001100;
 }
 
 .messages::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
+  background: #00ff00;
+  border-radius: 4px;
 }
 
 .messages::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: #00aa00;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .login-screen h1 {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .typewriter {
+    animation: typing 3s steps(11, end), blink-caret 0.75s step-end infinite;
+  }
+  
+  .login-screen button {
+    padding: 10px 20px;
+    font-size: 0.9rem;
+  }
+  
+  .user-id {
+    padding: 8px;
+    font-size: 0.7rem;
+  }
+  
+  .header {
+    padding: 10px;
+    flex-direction: column;
+    gap: 5px;
+    text-align: center;
+  }
+  
+  .header h2 {
+    font-size: 0.9rem;
+  }
+  
+  .timer {
+    font-size: 0.9rem;
+  }
+  
+  .no-room-message {
+    padding: 1rem;
+    margin: 0 10px;
+  }
+  
+  .no-room-message h2 {
+    font-size: 1rem;
+  }
+  
+  .messages {
+    padding: 10px;
+  }
+  
+  .message-bubble {
+    max-width: 85%;
+    padding: 10px 12px;
+    font-size: 0.8rem;
+  }
+  
+  .message-content {
+    font-size: 0.8rem;
+  }
+  
+  .input-area {
+    padding: 10px;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .input-area textarea {
+    font-size: 0.8rem;
+    padding: 10px;
+  }
+  
+  .input-area button {
+    padding: 10px 20px;
+    font-size: 0.8rem;
+    align-self: flex-end;
+    width: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-screen h1 {
+    font-size: 1.2rem;
+  }
+  
+  .typewriter {
+    animation: typing 3s steps(11, end), blink-caret 0.75s step-end infinite;
+  }
+  
+  .message-bubble {
+    max-width: 90%;
+    padding: 8px 10px;
+  }
+  
+  .no-room-message {
+    padding: 0.8rem;
+  }
+  
+  .no-room-message h2 {
+    font-size: 0.9rem;
+  }
 }
 </style>
