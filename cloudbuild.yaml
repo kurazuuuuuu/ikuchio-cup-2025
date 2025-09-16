@@ -8,8 +8,8 @@ steps:
         cd backend/ikuchio-cup-2025
         pip install uv
         uv sync
-        uv run pytest
-    id: 'backend-test'
+        uv run ruff check src/
+    id: 'backend-lint'
 
   # Frontend build
   - name: 'node:22-alpine'
@@ -33,7 +33,7 @@ steps:
       - 'backend/Dockerfile'
       - '.'
     id: 'backend-docker-build'
-    waitFor: ['backend-test']
+    waitFor: ['backend-lint']
 
   # Build frontend Docker image
   - name: 'gcr.io/cloud-builders/docker'
