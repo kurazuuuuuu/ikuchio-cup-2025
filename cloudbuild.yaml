@@ -84,8 +84,8 @@ serviceAccount: 'projects/ikuchio-cup-2025/serviceAccounts/ikuchio-cicd@ikuchio-
 timeout: '300s'
 
 options:
-  machineType: 'E2_HIGHCPU_32'
+  machineType: 'E2_HIGHCPU_8'
   logging: CLOUD_LOGGING_ONLY
-  diskSizeGb: 100
+  diskSizeGb: 50
   env:
     - 'DOCKER_BUILDKIT=1'
