@@ -54,8 +54,10 @@ steps:
       - '--set-secrets=API_KEY=google-vertexai-api-key:latest'
       - '--service-account=ikuchio-cicd@ikuchio-cup-2025.iam.gserviceaccount.com'
       - '--set-env-vars=GOOGLE_CLOUD_PROJECT=ikuchio-cup-2025'
-      - '--timeout=300'
+      - '--timeout=900'
       - '--port=8000'
+      - '--cpu=2'
+      - '--memory=2Gi'
       - '--no-traffic'
     id: 'backend-deploy'
     waitFor: ['backend-push']
