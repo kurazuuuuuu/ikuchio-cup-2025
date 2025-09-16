@@ -1,7 +1,6 @@
 import asyncio
 import datetime
-from db.users import firestore_get_all_users, db
-from db.rooms import firestore_create_room
+from db.rooms import firestore_reset_all_rooms
 import uuid
 import random
 
@@ -27,62 +26,10 @@ class RoomScheduler:
         return next_reset
     
     async def reset_all_rooms(self):
-        """全ユーザーのルームをリセットし、新しいペアリングを作成"""
         try:
-            print("[Scheduler] Starting room reset...")
-            
-            # 全ユーザーを取得
-            users = firestore_get_all_users()
-            if not users:
-                print("[Scheduler] No users found")
-                return
-            
-            # 全ユーザーのroom_idをクリア
-            batch = db.batch()
-            for user in users:
-                user_id = f"user_{user['firebase_uid']}"
-                user_ref = db.collection("users").document(user_id)
-                batch.update(user_ref, {"room_id": None})
-            
-            batch.commit()
-            print(f"[Scheduler] Cleared room_id for {len(users)} users")
-            
-            # ユーザーをシャッフルしてペアリング
-            random.shuffle(users)
-            
-            # ペアを作成
-            pairs = []
-            for i in range(0, len(users), 2):
-                if i + 1 < len(users):
-                    pairs.append([users[i], users[i + 1]])
-                else:
-                    # 奇数の場合、最後のユーザーは1人ルーム
-                    pairs.append([users[i]])
-            
-            # 新しいルームを作成
-            for pair in pairs:
-                room_id = f"room_{uuid.uuid4()}"
-                user_ids = [user['firebase_uid'] for user in pair]
-                
-                # ルーム作成
-                firestore_create_room(room_id, user_ids)
-                
-                # ユーザーにルームIDを割り当て
-                batch = db.batch()
-                for user in pair:
-                    user_id = f"user_{user['firebase_uid']}"
-                    user_ref = db.collection("users").document(user_id)
-                    batch.update(user_ref, {"room_id": room_id})
-                batch.commit()
-                
-                print(f"[Scheduler] Created room {room_id} for {len(pair)} users")
-            
-            print(f"[Scheduler] Room reset completed. Created {len(pairs)} rooms")
-            
-        except Exception as e:
-            print(f"[Scheduler] Error during room reset: {e}")
-            import traceback
-            print(f"[Scheduler] Traceback: {traceback.format_exc()}")
+            return firestore_reset_all_rooms()
+        except:
+            return {"error": "Failed to reset rooms"}
     
     async def start(self):
         """スケジューラーを開始"""
