@@ -10,4 +10,16 @@ def firestore_create_user(fingerprint_id: str = "0000") :
     }
 
     db.collection("users").document().set(user_data)
-    print(f"User #{fingerprint_id} created successfully!") #debug
+    return(f"User #{fingerprint_id} created successfully!")
+
+def firestore_get_user(fingerprint_id: str = "0000"):
+    users_ref = db.collection("users")
+    query = users_ref.where("fingerprint_id", "==", fingerprint_id)
+    docs = query.get()
+    
+    if docs:
+        user_doc = docs[0]
+        user_data = user_doc.to_dict()
+        return user_data
+    else:
+        return None
