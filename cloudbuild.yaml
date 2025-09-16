@@ -59,6 +59,36 @@ steps:
     id: 'frontend-push'
     waitFor: ['frontend-docker-build']
 
+  # Deploy backend to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'ikuchio-backend'
+      - '--image=gcr.io/$PROJECT_ID/ikuchio-backend:$COMMIT_SHA'
+      - '--region=asia-northeast1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--port=8000'
+    id: 'backend-deploy'
+    waitFor: ['backend-push']
+
+  # Deploy frontend to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'ikuchio-frontend'
+      - '--image=gcr.io/$PROJECT_ID/ikuchio-frontend:$COMMIT_SHA'
+      - '--region=asia-northeast1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--port=80'
+    id: 'frontend-deploy'
+    waitFor: ['frontend-push']
+
 images:
   - 'gcr.io/$PROJECT_ID/ikuchio-backend:$COMMIT_SHA'
   - 'gcr.io/$PROJECT_ID/ikuchio-frontend:$COMMIT_SHA'
