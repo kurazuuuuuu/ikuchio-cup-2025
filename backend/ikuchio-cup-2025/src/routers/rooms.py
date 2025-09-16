@@ -1,7 +1,12 @@
 from fastapi import APIRouter
 import uvicorn
 
-from db.rooms import firestore_get_room, firestore_get_all_rooms, firestore_reset_all_rooms, create_room_with_random_users
+from db.rooms import firestore_get_room, firestore_get_all_rooms, firestore_reset_all_rooms, create_room_with_random_users, firestore_send_message, firestore_get_messages
+from pydantic import BaseModel
+
+class MessageCreate(BaseModel):
+    original_text: str
+    sender_id: str = ""
 
 rooms_router = APIRouter()
 
@@ -35,3 +40,29 @@ async def refresh_rooms():
         return firestore_reset_all_rooms()
     except:
         return {"error": "Failed to reset rooms"}
+
+# Singular endpoints for frontend compatibility
+@rooms_router.get("/api/room/{room_id}")
+async def get_room_messages(room_id: str):
+    try:
+        return firestore_get_messages(room_id)
+    except Exception as e:
+        return {"error": f"Failed to get messages: {str(e)}"}
+
+
+
+@rooms_router.post("/api/room/{room_id}")
+async def send_message(room_id: str, message_data: MessageCreate):
+    try:
+        result = firestore_send_message(room_id, message_data.sender_id, message_data.original_text)
+        return result
+    except Exception as e:
+        return {"error": f"Failed to send message: {str(e)}"}
+
+@rooms_router.post("/api/rooms/{room_id}")
+async def send_message_plural(room_id: str, message_data: MessageCreate):
+    try:
+        result = firestore_send_message(room_id, message_data.sender_id, message_data.original_text)
+        return result
+    except Exception as e:
+        return {"error": f"Failed to send message: {str(e)}"}
