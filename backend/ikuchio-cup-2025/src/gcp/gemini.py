@@ -21,6 +21,8 @@ def get_api_key():
             import traceback
             print(f"[Gemini Debug] Full traceback: {traceback.format_exc()}")
             API_KEY = "fallback"
+    elif API_KEY == "fallback":
+        print("[Gemini Debug] API key is in fallback state, not retrying")
     return API_KEY
 
 def generate(input_text):

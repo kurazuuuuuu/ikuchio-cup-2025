@@ -57,6 +57,35 @@ def debug_database():
         "rooms": rooms
     }
 
+@app.get("/api/test-secret")
+def test_secret_manager():
+    """Secret Manager接続テスト用エンドポイント"""
+    from gcp.secret_manager import SecretManagerUtil
+    import traceback
+    
+    try:
+        print("[Test] Creating SecretManagerUtil instance...")
+        util = SecretManagerUtil()
+        
+        print("[Test] Attempting to get secret...")
+        secret = util.get_secret("88236233617", "google-vertexai-api-key")
+        
+        return {
+            "status": "success",
+            "secret_length": len(secret),
+            "secret_preview": secret[:10] + "..."
+        }
+        
+    except Exception as e:
+        error_info = {
+            "status": "error",
+            "error_type": type(e).__name__,
+            "error_message": str(e),
+            "traceback": traceback.format_exc()
+        }
+        print(f"[Test] Error: {error_info}")
+        return error_info
+
 
 # WebSocket接続管理
 active_connections = {}
