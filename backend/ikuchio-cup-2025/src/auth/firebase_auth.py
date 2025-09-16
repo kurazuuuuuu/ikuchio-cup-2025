@@ -6,11 +6,7 @@ import os
 # Firebase Admin初期化
 try:
     # Cloud Run環境では自動的にサービスアカウントを使用
-    # プロジェクトIDを明示的に指定
-    cred = credentials.ApplicationDefault()
-    initialize_app(cred, {
-        'projectId': 'ikuchio-cup-2025'
-    })
+    initialize_app()
     print("[Firebase] Admin SDK initialized successfully")
 except Exception as e:
     print(f"[Firebase] Admin SDK initialization failed: {e}")
