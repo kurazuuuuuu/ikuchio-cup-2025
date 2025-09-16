@@ -58,7 +58,8 @@ steps:
       - '--port=8000'
       - '--cpu=2'
       - '--memory=2Gi'
-      - '--no-traffic'
+      - '--max-instances=10'
+      - '--min-instances=0'
     id: 'backend-deploy'
     waitFor: ['backend-push']
 
@@ -73,7 +74,8 @@ steps:
       - '--platform=managed'
       - '--allow-unauthenticated'
       - '--service-account=ikuchio-cicd@ikuchio-cup-2025.iam.gserviceaccount.com'
-      - '--no-traffic'
+      - '--max-instances=10'
+      - '--min-instances=0'
     id: 'frontend-deploy'
     waitFor: ['frontend-push']
 
