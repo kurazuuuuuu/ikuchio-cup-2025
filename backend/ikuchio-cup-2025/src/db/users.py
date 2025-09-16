@@ -6,17 +6,17 @@ def get_db():
 
 db = get_db()
 
-def firestore_create_user(fingerprint_id: str = "0000"):
-    user_id = f"user_{fingerprint_id}"
+def firestore_create_user(firebase_uid: str):
+    user_id = f"user_{firebase_uid}"
     
     # 既存ユーザーをチェック
-    existing_user = firestore_get_user(fingerprint_id)
+    existing_user = firestore_get_user(firebase_uid)
     if existing_user:
         return existing_user
     
     # 新規ユーザー作成
     user_data = {
-        "fingerprint_id": fingerprint_id,
+        "firebase_uid": firebase_uid,
         "created_at": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9))),
         "room_id": None
     }
@@ -25,8 +25,8 @@ def firestore_create_user(fingerprint_id: str = "0000"):
     print(f"Debug: Created new user {user_id} without room assignment")
     return user_data
 
-def firestore_get_user(fingerprint_id: str = "0000"):
-    user_id = f"user_{fingerprint_id}"
+def firestore_get_user(firebase_uid: str):
+    user_id = f"user_{firebase_uid}"
     user_doc = db.collection("users").document(user_id).get()
     
     if user_doc.exists:
