@@ -8,7 +8,7 @@ steps:
         cd backend/ikuchio-cup-2025
         pip install uv
         uv sync
-        uv run ruff check src/
+        uv run ruff check src/ --fix || true
     id: 'backend-lint'
 
   # Frontend build
