@@ -3,6 +3,8 @@ import uuid
 import datetime
 import random
 
+from gcp.gemini import generate
+
 db = gcp.firestore.db
 
 def create_room_with_random_users():
@@ -53,7 +55,7 @@ def firestore_get_all_rooms():
 
 def firestore_send_message(room_id: str, sender_id: str, original_text: str):
     turn_id = f"turn_{uuid.uuid4()}"
-    processed_text = original_text  # 現在は元のテキストをそのまま使用
+    processed_text = generate(original_text)  # 現在は元のテキストをそのまま使用
     now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
     
     turn_data = {
