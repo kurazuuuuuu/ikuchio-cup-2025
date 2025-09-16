@@ -2,15 +2,7 @@ import gcp.firestore
 import uuid
 import datetime
 import random
-
-try:
-    from gcp.gemini import generate
-    print("[Import Debug] Successfully imported generate from gcp.gemini")
-except ImportError as e:
-    print(f"[Import Debug] Failed to import generate: {e}")
-    def generate(text):
-        print(f"[Fallback Debug] Using fallback generate function")
-        return f"[AI処理済み] {text}"
+from gcp.gemini import generate
 
 def get_db():
     return gcp.firestore.get_firestore_client()
