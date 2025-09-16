@@ -3,14 +3,20 @@ import datetime
 
 db = gcp.firestore.db
 
-def firestore_create_user(fingerprint_id: str = "0000") :
+def firestore_create_user(fingerprint_id: str = "0000"):
+    # 既存ユーザーをチェック
+    existing_user = firestore_get_user(fingerprint_id)
+    if existing_user:
+        return f"user#{existing_user["fingerprint_id"]} already exist "
+    
+    # 新規ユーザー作成
     user_data = {
         "fingerprint_id": fingerprint_id,
         "created_at": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9))),
     }
 
     db.collection("users").document().set(user_data)
-    return(f"User #{fingerprint_id} created successfully!")
+    return user_data
 
 def firestore_get_user(fingerprint_id: str = "0000"):
     users_ref = db.collection("users")
