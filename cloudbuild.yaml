@@ -70,6 +70,7 @@ steps:
       - '--region=asia-northeast1'
       - '--platform=managed'
       - '--allow-unauthenticated'
+      - '--set-secrets=API_KEY=google-vertexai-api-key:latest'
       - '--port=8000'
     id: 'backend-deploy'
     waitFor: ['backend-push']
@@ -92,6 +93,8 @@ steps:
 images:
   - 'gcr.io/$PROJECT_ID/ikuchio-backend:$COMMIT_SHA'
   - 'gcr.io/$PROJECT_ID/ikuchio-frontend:$COMMIT_SHA'
+
+serviceAccount: 'projects/ikuchio-cup-2025/serviceAccounts/cicd-919@ikuchio-cup-2025.iam.gserviceaccount.com'
 
 options:
   machineType: 'E2_HIGHCPU_8'
