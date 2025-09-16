@@ -1,6 +1,6 @@
 from google.cloud import secretmanager
 
-class SecretManagerUtil:
+class SecretManagerUtil: #GCPのシークレット取得
     def get_secret(self, project_id: str, secret_id: str) -> str:
         client = secretmanager.SecretManagerServiceClient()
         name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"

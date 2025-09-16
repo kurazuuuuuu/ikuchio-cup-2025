@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import HelloWorld from './components/HelloWorld.vue'
 import TheWelcome from './components/TheWelcome.vue'
+import Fingerprint from './components/Fingerprint.vue'
 </script>
 
 <template>
@@ -13,6 +14,7 @@ import TheWelcome from './components/TheWelcome.vue'
   </header>
 
   <main>
+    <Fingerprint />
     <TheWelcome />
   </main>
 </template>
