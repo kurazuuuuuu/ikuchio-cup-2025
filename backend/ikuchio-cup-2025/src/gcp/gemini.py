@@ -62,6 +62,7 @@ def generate(input_text):
     types.Content(
       role="user",
       parts=[
+        types.Part.from_text(text=input_text)
       ]
     )
   ]
@@ -90,9 +91,18 @@ def generate(input_text):
     ),
   )
 
-  for chunk in client.models.generate_content_stream(
-    model = model,
-    contents = contents,
-    config = generate_content_config,
-    ):
-    print(chunk.text, end="")
+  try:
+    response_text = ""
+    for chunk in client.models.generate_content_stream(
+      model = model,
+      contents = contents,
+      config = generate_content_config,
+      ):
+      if chunk.text:
+        response_text += chunk.text
+    
+    print(f"[Gemini Debug] Generated response: {response_text[:100]}...")
+    return response_text if response_text.strip() else input_text
+  except Exception as e:
+    print(f"[Gemini Debug] Generation failed: {str(e)}")
+    return input_text
