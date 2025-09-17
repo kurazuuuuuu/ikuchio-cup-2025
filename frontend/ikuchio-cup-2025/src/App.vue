@@ -472,7 +472,6 @@ onUnmounted(() => {
   flex-direction: column;
   text-shadow: 0 0 5px #00ff00;
   position: relative;
-  overflow: hidden;
   filter: contrast(1.1) brightness(1.05);
 }
 
