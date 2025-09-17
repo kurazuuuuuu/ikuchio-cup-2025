@@ -13,7 +13,7 @@
         </div>
         <div class="controls">
           <div class="timer">{{ timeLeft }}</div>
-          <button @click="logout" class="logout-btn">Logout</button>
+          <button @click="logout" class="logout-btn">EXIT</button>
         </div>
       </div>
       
