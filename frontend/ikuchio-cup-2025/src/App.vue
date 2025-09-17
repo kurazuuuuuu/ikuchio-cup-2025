@@ -109,9 +109,9 @@ const getApiBase = () => {
   if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
     return 'http://localhost:8000'
   }
-  // HTTPSサイトからはHTTPS APIを使用
+  // 一時的にLoadBalancer IPを使用
   if (hostname.includes('krz-tech.net')) {
-    return window.location.protocol === 'https:' ? 'https://api-ikuchio-cup-2025.krz-tech.net' : 'http://api-ikuchio-cup-2025.krz-tech.net:8000'
+    return 'http://34.146.255.229:8000'
   }
   // フォールバック: LoadBalancer IP
   return 'http://34.146.255.229:8000'
@@ -310,9 +310,9 @@ const connectWebSocket = () => {
     if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
       return `ws://localhost:8000/ws/${roomId.value}`
     }
-    // HTTPSサイトからはWSSを使用
+    // 一時的にLoadBalancer IPを使用
     if (hostname.includes('krz-tech.net')) {
-      return window.location.protocol === 'https:' ? `wss://api-ikuchio-cup-2025.krz-tech.net/ws/${roomId.value}` : `ws://api-ikuchio-cup-2025.krz-tech.net:8000/ws/${roomId.value}`
+      return `ws://34.146.255.229:8000/ws/${roomId.value}`
     }
     // フォールバック: LoadBalancer IP
     return `ws://34.146.255.229:8000/ws/${roomId.value}`
