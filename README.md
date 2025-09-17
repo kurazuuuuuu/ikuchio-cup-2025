@@ -114,9 +114,8 @@ echo "YOUR_GEMINI_API_KEY" | gcloud secrets create google-vertexai-api-key --dat
 ### Cloudflare DNS設定
 Cloudflareダッシュボードで以下のレコードを設定：
 ```
-A krz-tech.net → 35.243.125.105 (🟠 プロキシ有効)
-A www.krz-tech.net → 35.243.125.105 (🟠 プロキシ有効)
-A api-ikuchio-cup-2025.krz-tech.net → 34.146.255.229 (⚫ プロキシ無効)
+A ikuchio-cup-2025.krz-tech.net → 35.243.125.105 (🟠 プロキシ有効)
+A www.ikuchio-cup-2025.krz-tech.net → 35.243.125.105 (🟠 プロキシ有効)
 ```
 
 **重要**: APIサブドメインはプロキシ無効でWebSocket接続を有効化
@@ -143,8 +142,8 @@ gcloud builds submit --config cloudbuild.yaml .
 ```
 
 ### 現在のアクセスURL
-- **メインサイト**: https://krz-tech.net
-- **API**: https://api-ikuchio-cup-2025.krz-tech.net
+- **メインサイト**: https://ikuchio-cup-2025.krz-tech.net
+- **API**: http://34.146.255.229:8000 (LoadBalancer)
 - **フォールバック**: 
   - Frontend: http://35.243.125.105
   - Backend: http://34.146.255.229:8000

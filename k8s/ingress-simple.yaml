@@ -1,14 +1,12 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: ikuchio-ingress
+  name: ikuchio-simple-ingress
   namespace: ikuchio-cup-2025
-  annotations:
-    kubernetes.io/ingress.global-static-ip-name: "ikuchio-ip"
 spec:
   ingressClassName: "gce"
   rules:
-  - host: ikuchio-cup-2025.krz-tech.net
+  - host: krz-tech.net
     http:
       paths:
       - path: /*
@@ -18,16 +16,6 @@ spec:
             name: ikuchio-frontend-service
             port:
               number: 80
-  - host: api-ikuchio-cup-2025.krz-tech.net
-    http:
-      paths:
-      - path: /*
-        pathType: ImplementationSpecific
-        backend:
-          service:
-            name: ikuchio-backend-service
-            port:
-              number: 8000
   - host: api-ikuchio-cup-2025.krz-tech.net
     http:
       paths:
