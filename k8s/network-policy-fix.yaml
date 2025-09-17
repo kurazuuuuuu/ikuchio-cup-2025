@@ -1,0 +1,14 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ikuchio-network-policy
+  namespace: ikuchio-cup-2025
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - {} # 全てのIngressトラフィックを許可
+  egress:
+  - {} # 全てのEgressトラフィックを許可

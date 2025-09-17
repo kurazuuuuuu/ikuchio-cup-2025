@@ -59,11 +59,7 @@ data:
     no-autoupdate: true
     ingress:
       - hostname: ikuchio-cup-2025.krz-tech.net
-        service: http://ikuchio-internal-lb:80
-        originRequest:
-          httpHostHeader: ikuchio-cup-2025.krz-tech.net
+        service: http://ikuchio-frontend-service:80
       - hostname: api-ikuchio-cup-2025.krz-tech.net
-        service: http://ikuchio-internal-lb:80
-        originRequest:
-          httpHostHeader: api-ikuchio-cup-2025.krz-tech.net
+        service: http://ikuchio-backend-service:8000
       - service: http_status:404

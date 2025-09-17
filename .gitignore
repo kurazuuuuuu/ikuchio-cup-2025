@@ -8,7 +8,7 @@
 .amazonq/
 
 # draw.io
-*.bkp
+.$architecture.drawio.bkp
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
