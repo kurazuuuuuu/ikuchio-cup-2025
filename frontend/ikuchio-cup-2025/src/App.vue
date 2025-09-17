@@ -111,7 +111,7 @@ const getApiBase = () => {
   }
   // Cloudflare ドメイン経由
   if (hostname === 'krz-tech.net' || hostname.includes('krz-tech.net')) {
-    return 'https://api-ikuchio-cup-2025.krz-tech.net'
+    return 'http://34.146.255.229:8000'
   }
   // フォールバック: LoadBalancer IP
   return 'http://34.146.255.229:8000'
@@ -312,7 +312,7 @@ const connectWebSocket = () => {
     }
     // Cloudflare ドメイン経由
     if (hostname === 'krz-tech.net' || hostname.includes('krz-tech.net')) {
-      return `wss://api-ikuchio-cup-2025.krz-tech.net/ws/${roomId.value}`
+      return `ws://34.146.255.229:8000/ws/${roomId.value}`
     }
     // フォールバック: LoadBalancer IP
     return `ws://34.146.255.229:8000/ws/${roomId.value}`

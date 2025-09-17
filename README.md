@@ -65,8 +65,8 @@
   - Google Cloud Vertex AI Gemini 2.5 Pro (メッセージ処理・匿名化)
 
 - **インフラ**：
-  - Google Cloud GKE (Kubernetesコンテナオーケストレーション)
-  - Google Cloud DNS (ドメイン管理)
+  - Google Cloud GKE Autopilot (Kubernetesコンテナオーケストレーション)
+  - Cloudflare (DNS・CDN・SSL)
   - Google Cloud Secret Manager (API Key管理)
   - Google Cloud Build (CI/CD)
   - Docker (コンテナ化)
@@ -111,6 +111,16 @@ gcloud config set project ikuchio-cup-2025
 echo "YOUR_GEMINI_API_KEY" | gcloud secrets create google-vertexai-api-key --data-file=-
 ```
 
+### Cloudflare DNS設定
+Cloudflareダッシュボードで以下のレコードを設定：
+```
+A krz-tech.net → 35.243.125.105 (🟠 プロキシ有効)
+A www.krz-tech.net → 35.243.125.105 (🟠 プロキシ有効)
+A api-ikuchio-cup-2025.krz-tech.net → 34.146.255.229 (⚫ プロキシ無効)
+```
+
+**重要**: APIサブドメインはプロキシ無効でWebSocket接続を有効化
+
 ### GKE セットアップ
 ```bash
 # GKEクラスター作成
@@ -133,9 +143,11 @@ gcloud builds submit --config cloudbuild.yaml .
 ```
 
 ### 現在のアクセスURL
-- **フロントエンド**: http://35.243.125.105
-- **バックエンド**: http://34.146.255.229:8000
-- **DNS反映後**: https://krz-tech.net
+- **メインサイト**: https://krz-tech.net
+- **API**: https://api-ikuchio-cup-2025.krz-tech.net
+- **フォールバック**: 
+  - Frontend: http://35.243.125.105
+  - Backend: http://34.146.255.229:8000
 
 ## 現在のインフラ構成
 
@@ -151,15 +163,17 @@ gcloud builds submit --config cloudbuild.yaml .
 - **自動スケーリング**: CPU 70%でスケールアウト
 
 ### ネットワーク
-- **静的IP**: 34.54.141.104
+- **静的IP**: 34.54.141.104 (Ingress)
 - **LoadBalancer IP**: 
-  - Frontend: 35.187.202.58
-  - Backend: 35.243.125.105
-- **DNS**: ikuchio-cup-2025-vrcat.com (Google Cloud DNS)
+  - Frontend: 35.243.125.105
+  - Backend: 34.146.255.229
+- **DNS**: krz-tech.net (Cloudflare)
+- **CDN**: Cloudflare (DDoS保護、SSL、キャッシュ)
 
 ### SSL証明書
-- **Google管理SSL**: 自動発行・更新
-- **ドメイン**: ikuchio-cup-2025-vrcat.com, api.ikuchio-cup-2025-vrcat.com
+- **Cloudflare SSL**: 自動発行・更新 (Full Strict)
+- **ドメイン**: krz-tech.net, api-ikuchio-cup-2025.krz-tech.net
+- **機能**: Always Use HTTPS, HSTS, TLS 1.3
 
 ## 運用情報
 ### API エンドポイント
@@ -228,13 +242,13 @@ WS /ws/{room_id}
 ## アーキテクチャ
 
 ```
-[ユーザー] → [Google Cloud DNS] → [GKE Ingress] → [LoadBalancer]
-                                            ↓
-                                    [Frontend Pod] → [Firebase Auth]
-                                            ↓
-                                    [Backend Pod] → [Firestore]
-                                            ↓
-                                    [WebSocket] ← [Vertex AI Gemini]
+[ユーザー] → [Cloudflare CDN] → [GKE LoadBalancer] → [Frontend Pod]
+                     ↓                              ↓
+              [DDoS保護/SSL]                    [Firebase Auth]
+                     ↓                              ↓
+         [api-ikuchio-cup-2025.krz-tech.net] → [Backend Pod] → [Firestore]
+                                                      ↓
+                                              [WebSocket] ← [Vertex AI Gemini]
 ```
 
 ### セキュリティ

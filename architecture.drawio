@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2025-09-17T04:00:00.000Z" agent="5.0" version="24.7.8" type="device">
+  <diagram name="ikuchio-cup-2025-architecture" id="architecture">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <mxCell id="user" value="ユーザー" style="shape=actor;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+          <mxGeometry x="80" y="200" width="60" height="80" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="cloudflare" value="Cloudflare CDN&#xa;krz-tech.net" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ff9900;strokeColor=#d79b00;fontColor=#ffffff;" parent="1" vertex="1">
+          <mxGeometry x="240" y="200" width="120" height="80" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="gke" value="GKE Autopilot&#xa;autopilot-cluster-1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4285f4;strokeColor=#1a73e8;fontColor=#ffffff;" parent="1" vertex="1">
+          <mxGeometry x="440" y="200" width="120" height="80" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="frontend" value="Frontend Pod&#xa;Vue.js + PWA" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#34a853;strokeColor=#137333;fontColor=#ffffff;" parent="1" vertex="1">
+          <mxGeometry x="640" y="120" width="120" height="80" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="backend" value="Backend Pod&#xa;FastAPI + WebSocket" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#34a853;strokeColor=#137333;fontColor=#ffffff;" parent="1" vertex="1">
+          <mxGeometry x="640" y="280" width="120" height="80" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="firebase" value="Firebase&#xa;Authentication" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ff6f00;strokeColor=#e65100;fontColor=#ffffff;" parent="1" vertex="1">
+          <mxGeometry x="840" y="120" width="120" height="80" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="firestore" value="Cloud Firestore&#xa;NoSQL Database" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4285f4;strokeColor=#1a73e8;fontColor=#ffffff;" parent="1" vertex="1">
+          <mxGeometry x="840" y="280" width="120" height="80" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="vertexai" value="Vertex AI&#xa;Gemini 2.5 Pro" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ea4335;strokeColor=#c5221f;fontColor=#ffffff;" parent="1" vertex="1">
+          <mxGeometry x="840" y="400" width="120" height="80" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="secret" value="Secret Manager&#xa;API Keys" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9aa0a6;strokeColor=#5f6368;fontColor=#ffffff;" parent="1" vertex="1">
+          <mxGeometry x="640" y="400" width="120" height="80" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="github" value="GitHub&#xa;Source Code" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#24292e;strokeColor=#1b1f23;fontColor=#ffffff;" parent="1" vertex="1">
+          <mxGeometry x="240" y="400" width="120" height="80" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="cloudbuild" value="Cloud Build&#xa;CI/CD Pipeline" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4285f4;strokeColor=#1a73e8;fontColor=#ffffff;" parent="1" vertex="1">
+          <mxGeometry x="440" y="400" width="120" height="80" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="conn1" value="HTTPS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#4285f4;strokeWidth=2;" parent="1" source="user" target="cloudflare" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="conn2" value="CDN + SSL" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ff6f00;strokeWidth=2;" parent="1" source="cloudflare" target="gke" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="conn3" value="LoadBalancer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#34a853;strokeWidth=2;" parent="1" source="gke" target="frontend" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="conn4" value="API Calls" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#34a853;strokeWidth=2;" parent="1" source="gke" target="backend" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="conn5" value="Auth" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ff6f00;strokeWidth=2;" parent="1" source="frontend" target="firebase" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="conn6" value="Data" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#4285f4;strokeWidth=2;" parent="1" source="backend" target="firestore" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="conn7" value="AI Processing" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ea4335;strokeWidth=2;" parent="1" source="backend" target="vertexai" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="conn8" value="Secrets" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#9aa0a6;strokeWidth=2;" parent="1" source="backend" target="secret" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="conn9" value="Push" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#24292e;strokeWidth=2;" parent="1" source="github" target="cloudbuild" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="conn10" value="Deploy" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#4285f4;strokeWidth=2;" parent="1" source="cloudbuild" target="gke" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
