@@ -109,10 +109,9 @@ const getApiBase = () => {
   if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
     return 'http://localhost:8000'
   }
-  // Cloudflare ドメイン経由
-  if (hostname === 'ikuchio-cup-2025.krz-tech.net' || hostname.includes('ikuchio-cup-2025.krz-tech.net')) {
-    // HTTPSサイトからはHTTPS APIを使用
-    return window.location.protocol === 'https:' ? 'https://api-ikuchio-cup-2025.krz-tech.net' : 'http://34.146.255.229:8000'
+  // HTTPS環境では常にHTTPS APIを使用
+  if (window.location.protocol === 'https:' || hostname.includes('krz-tech.net')) {
+    return 'https://api-ikuchio-cup-2025.krz-tech.net'
   }
   // フォールバック: LoadBalancer IP
   return 'http://34.146.255.229:8000'
@@ -311,10 +310,9 @@ const connectWebSocket = () => {
     if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
       return `ws://localhost:8000/ws/${roomId.value}`
     }
-    // Cloudflare ドメイン経由
-    if (hostname === 'ikuchio-cup-2025.krz-tech.net' || hostname.includes('ikuchio-cup-2025.krz-tech.net')) {
-      // HTTPSサイトからはWSSを使用
-      return window.location.protocol === 'https:' ? `wss://api-ikuchio-cup-2025.krz-tech.net/ws/${roomId.value}` : `ws://34.146.255.229:8000/ws/${roomId.value}`
+    // HTTPS環境では常にWSSを使用
+    if (window.location.protocol === 'https:' || hostname.includes('krz-tech.net')) {
+      return `wss://api-ikuchio-cup-2025.krz-tech.net/ws/${roomId.value}`
     }
     // フォールバック: LoadBalancer IP
     return `ws://34.146.255.229:8000/ws/${roomId.value}`
