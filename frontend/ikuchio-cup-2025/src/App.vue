@@ -67,18 +67,7 @@
             </div>
           </div>
         </div>
-        <!-- 画像生成ボタンと画像表示領域を追加 -->
-        <div class="image-generation-area">
-          <button @click="generateImageForRoom" :disabled="imageGenerating || !roomId" class="generate-image-btn">
-            {{ imageGenerating ? '生成中...' : '画像生成' }}
-          </button>
-          <div v-if="generatedImageUrl" class="generated-image-container">
-            <img :src="generatedImageUrl" alt="Generated Image" style="max-width: 100%; margin-top: 12px;" />
-          </div>
-          <div v-if="imageError" class="image-error">
-            {{ imageError }}
-          </div>
-        </div>
+
       </div>
       
       <div v-if="roomId && !loading" class="input-area">
@@ -143,9 +132,7 @@ const loading = ref<boolean>(false)
 const loadingCompleted = ref<boolean>(false)
 const mouseX = ref<number>(0)
 const mouseY = ref<number>(0)
-const generatedImageUrl = ref<string>('')
-const imageGenerating = ref<boolean>(false)
-const imageError = ref<string>('')
+
 
 let timerInterval: number | null = null
 let websocket: WebSocket | null = null
@@ -475,29 +462,7 @@ onUnmounted(() => {
   }
 })
 
-const generateImageForRoom = async () => {
-  if (!roomId.value) return
-  imageGenerating.value = true
-  imageError.value = ''
-  generatedImageUrl.value = ''
-  try {
-    const response = await fetch(`${API_BASE}/api/rooms/${roomId.value}/generate_image`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-      mode: 'cors'
-    })
-    const data = await response.json()
-    if (response.ok && data.image_url) {
-      generatedImageUrl.value = data.image_url
-    } else {
-      imageError.value = data.error || '画像生成に失敗しました'
-    }
-  } catch (e) {
-    imageError.value = '画像生成API通信エラー'
-  } finally {
-    imageGenerating.value = false
-  }
-}
+
 </script>
 
 <style scoped>
