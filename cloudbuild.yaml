@@ -84,8 +84,8 @@ steps:
         kubectl apply -f k8s/
         
         # Wait for rollout
-        kubectl rollout status deployment/ikuchio-backend -n ikuchio-cup-2025 --timeout=300s
-        kubectl rollout status deployment/ikuchio-frontend -n ikuchio-cup-2025 --timeout=300s
+        kubectl rollout status deployment/ikuchio-backend -n ikuchio-cluster --timeout=300s
+        kubectl rollout status deployment/ikuchio-frontend -n ikuchio-cluster --timeout=300s
     id: 'deploy-gke'
     waitFor: ['backend-push', 'frontend-push', 'create-secret']
 
