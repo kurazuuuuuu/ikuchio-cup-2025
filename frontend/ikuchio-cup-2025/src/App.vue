@@ -1,9 +1,9 @@
 <template>
   <div id="app">
     <div class="mouse-noise" :style="{ left: mouseX + 'px', top: mouseY + 'px' }"></div>
-    <div v-if="!user" class="login-screen">
+    <div v-if="!user" class="login-screen" :class="{ 'red-mode': isRedMode }">
       <h1 class="typewriter">24時間でさようなら</h1>
-      <button @click="login">Login</button>
+      <button @click="login" :disabled="loggingIn">{{ loggingIn ? 'Connecting...' : 'Login' }}</button>
     </div>
     
     <div v-else class="chat-screen" :class="{ 'loading-completed': loadingCompleted }">
@@ -28,11 +28,16 @@
       </div>
       
       <!-- ルームが存在しない場合 -->
-      <div v-else-if="!roomId" class="no-room-screen">
-        <div class="no-room-message">
-          <h2>まだあなたの相手は見つかっていないようですよ...</h2>
-          <div class="reset-timer">
-            <p>次のペアリングまで: {{ timeLeft }}</p>
+      <div v-else-if="!roomId" class="matching-screen">
+        <div class="matching-loading">
+          <div class="loading-line typewriter-line match1">[ OK ] User authenticated successfully...</div>
+          <div class="loading-line typewriter-line match2">[ OK ] Connecting to matching server...</div>
+          <div class="loading-line typewriter-line match3">[ .. ] Searching for available partners<span class="cursor">_</span></div>
+          <div class="loading-line typewriter-line match4">[ .. ] Analyzing compatibility...</div>
+          <div class="loading-line typewriter-line match5 waiting">[ WAIT ] No partners found. Waiting for new connections...</div>
+          <div class="matching-info">
+            <div class="info-line">Next matching cycle: {{ timeLeft }}</div>
+            <div class="info-line">Status: STANDBY</div>
           </div>
         </div>
       </div>
@@ -48,7 +53,10 @@
           <div v-for="message in messages" :key="message.id" 
                 :class="['message-wrapper', message.original_sender_id === user?.firebase_uid ? 'own-message' : 'other-message']">
             <div class="message-bubble">
-              <div class="message-content">{{ cleanMessageText(message.processed_text) }}</div>
+              <div v-if="message.original_sender_id === user?.firebase_uid" class="processed-header">
+                <span class="processed-label">PROCESSED MESSAGE.</span>
+              </div>
+              <div class="message-content" v-html="formatCensoredText(cleanMessageText(message.processed_text))"></div>
               <div class="message-time">{{ formatTime(message.created_at) }}</div>
             </div>
           </div>
@@ -57,10 +65,15 @@
           <div v-if="sending" class="message-wrapper own-message">
             <div class="message-bubble processing">
               <div class="message-content">
-                <div class="processing-indicator">
-                  <span class="dots">AIが処理中</span>
-                  <div class="dot-animation">
-                    <span>.</span><span>.</span><span>.</span>
+                <div class="dos-conversion">
+                  <div class="dos-header">C:\AI\PROCESS> CONVERTING MESSAGE...</div>
+                  <div class="dos-binary">{{ binaryText }}</div>
+                  <div class="dos-status">
+                    <span class="dos-prompt">C:\AI\PROCESS></span>
+                    <span class="dos-command">ANALYZE.EXE</span>
+                    <div class="dos-dots">
+                      <span>.</span><span>.</span><span>.</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -130,14 +143,24 @@ const messagesContainer = ref<HTMLElement>()
 const isSoloRoom = ref<boolean>(false)
 const loading = ref<boolean>(false)
 const loadingCompleted = ref<boolean>(false)
+const loggingIn = ref<boolean>(false)
+const binaryText = ref<string>('')
+const isRedMode = ref<boolean>(false)
 const mouseX = ref<number>(0)
 const mouseY = ref<number>(0)
 
 
 let timerInterval: number | null = null
 let websocket: WebSocket | null = null
+let matchingInterval: number | null = null
+let binaryInterval: number | null = null
+let redModeTimeout: number | null = null
 
 const login = async () => {
+  if (loggingIn.value) return
+  
+  stopRedModeTimer()
+  loggingIn.value = true
   loading.value = true
   let firebaseAuth: FirebaseAuthResult | null = null
   try {
@@ -173,6 +196,9 @@ const login = async () => {
     
     if (userData.room_id) {
       connectWebSocket()
+    } else {
+      // ルーム未参加の場合、定期的にマッチング状況をチェック
+      startMatchingCheck()
     }
     startTimer()
     
@@ -197,17 +223,21 @@ const login = async () => {
     // 少し待ってからローディングを終了
     setTimeout(() => {
       loading.value = false
+      loggingIn.value = false
     }, 100)
   }
 }
 
 const refreshUserData = async () => {
-    
-
   if (!user.value) return
   
   try {
-    const response = await fetch(`${API_BASE}/api/users?firebase_uid=${user.value.firebase_uid}`)
+    const firebaseAuth = await signInAnonymous()
+    const response = await fetch(`${API_BASE}/api/users?firebase_uid=${user.value.firebase_uid}`, {
+      headers: {
+        'Authorization': `Bearer ${firebaseAuth.token}`
+      }
+    })
     if (response.ok) {
       const userData = await response.json()
       if (userData && userData.firebase_uid) {
@@ -218,6 +248,7 @@ const refreshUserData = async () => {
         console.log(`Debug: User data refreshed - Room changed from ${oldRoomId || 'None'} to ${userData.room_id || 'None'}`)
         
         if (userData.room_id && userData.room_id !== oldRoomId) {
+          stopMatchingCheck()
           connectWebSocket()
         }
       }
@@ -227,10 +258,73 @@ const refreshUserData = async () => {
   }
 }
 
+const startMatchingCheck = () => {
+  if (matchingInterval) return
+  
+  console.log('Debug: Starting matching check interval')
+  matchingInterval = setInterval(refreshUserData, 3000) // 3秒ごとにチェック
+}
+
+const stopMatchingCheck = () => {
+  if (matchingInterval) {
+    clearInterval(matchingInterval)
+    matchingInterval = null
+    console.log('Debug: Stopped matching check interval')
+  }
+}
+
+const startBinaryAnimation = (text: string) => {
+  const fullBinary = text.split('').map(char => 
+    char.charCodeAt(0).toString(2).padStart(8, '0')
+  ).join('')
+  
+  let bitIndex = 0
+  binaryText.value = ''
+  
+  binaryInterval = setInterval(() => {
+    if (bitIndex < fullBinary.length) {
+      binaryText.value += fullBinary[bitIndex]
+      bitIndex++
+    } else {
+      if (binaryInterval) {
+        clearInterval(binaryInterval)
+        binaryInterval = null
+      }
+    }
+  }, 100)
+}
+
+const stopBinaryAnimation = () => {
+  if (binaryInterval) {
+    clearInterval(binaryInterval)
+    binaryInterval = null
+  }
+  binaryText.value = ''
+}
+
+const startRedModeTimer = () => {
+  if (redModeTimeout) return
+  
+  redModeTimeout = setTimeout(() => {
+    isRedMode.value = true
+  }, 300000) // 5分 = 300000ms
+}
+
+const stopRedModeTimer = () => {
+  if (redModeTimeout) {
+    clearTimeout(redModeTimeout)
+    redModeTimeout = null
+  }
+  isRedMode.value = false
+}
+
 const sendMessage = async () => {
   if (!newMessage.value.trim() || sending.value || !user.value) return
   
+  const messageText = newMessage.value
   sending.value = true
+  startBinaryAnimation(messageText)
+  
   try {
     const response = await fetch(`${API_BASE}/api/room/${roomId.value}`, {
       method: 'POST',
@@ -245,7 +339,6 @@ const sendMessage = async () => {
       throw new Error(`HTTP ${response.status}`)
     }
     
-    const messageText = newMessage.value
     newMessage.value = ''
     
     if (websocket && websocket.readyState === WebSocket.OPEN) {
@@ -258,6 +351,7 @@ const sendMessage = async () => {
     console.error('Send failed:', error)
     alert('メッセージの送信に失敗しました')
   } finally {
+    stopBinaryAnimation()
     sending.value = false
   }
 }
@@ -371,9 +465,9 @@ const updateTimer = () => {
     if (timerInterval) {
       clearInterval(timerInterval)
     }
-    // 定時リセット時に強制リロード
+    // タイマー終了時に初期画面に戻る
     setTimeout(() => {
-      window.location.href = window.location.href
+      logout()
     }, 1000)
   }
 }
@@ -386,6 +480,14 @@ const scrollToBottom = () => {
 
 const cleanMessageText = (text: string) => {
   return text.replace(/\[AI処理済み\]\s*/, '')
+}
+
+const formatCensoredText = (text: string) => {
+  return text
+    .replace(/<<[^>]*>>/g, '<span class="censored-text" style="color: #ff4444 !important; text-shadow: 0 0 3px #ff4444 !important;">$&</span>')
+    .replace(/▢+/g, '<span class="censored-text" style="color: #ff4444 !important; text-shadow: 0 0 3px #ff4444 !important;">$&</span>')
+    .replace(/□+/g, '<span class="censored-text" style="color: #ff4444 !important; text-shadow: 0 0 3px #ff4444 !important;">$&</span>')
+    .replace(/█+/g, '<span class="censored-text" style="color: #ff4444 !important; text-shadow: 0 0 3px #ff4444 !important;">$&</span>')
 }
 
 const formatTime = (timestamp: string) => {
@@ -410,9 +512,11 @@ const logout = () => {
   if (websocket) {
     websocket.close()
   }
+  stopMatchingCheck()
   user.value = null
   roomId.value = ''
   messages.value = []
+  startRedModeTimer()
 }
 
 let mouseThrottle = false
@@ -445,6 +549,9 @@ if (typeof window !== 'undefined') {
   }
 }
 
+// 初期表示時にタイマー開始
+startRedModeTimer()
+
 onUnmounted(() => {
   if (timerInterval) {
     clearInterval(timerInterval)
@@ -452,6 +559,9 @@ onUnmounted(() => {
   if (websocket) {
     websocket.close()
   }
+  stopMatchingCheck()
+  stopBinaryAnimation()
+  stopRedModeTimer()
   if (typeof window !== 'undefined') {
     window.removeEventListener('mousemove', handleMouseMove)
     
@@ -597,10 +707,41 @@ onUnmounted(() => {
   letter-spacing: 1px;
 }
 
-.login-screen button:hover {
+.login-screen button:hover:not(:disabled) {
   background: #00ff00;
   color: #0a0a0a;
   box-shadow: 0 0 20px #00ff00;
+}
+
+.login-screen button:disabled {
+  border-color: #003300;
+  color: #003300;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.login-screen.red-mode {
+  color: #ff0000 !important;
+}
+
+.login-screen.red-mode h1 {
+  color: #ff0000 !important;
+  text-shadow: 0 0 10px #ff0000 !important;
+}
+
+.login-screen.red-mode button {
+  color: #ff0000 !important;
+  border-color: #ff0000 !important;
+}
+
+.login-screen.red-mode button:hover:not(:disabled) {
+  background: #ff0000 !important;
+  color: #0a0a0a !important;
+  box-shadow: 0 0 20px #ff0000 !important;
+}
+
+.login-screen.red-mode .typewriter::after {
+  color: #ff0000 !important;
 }
 
 .chat-screen {
@@ -805,35 +946,72 @@ onUnmounted(() => {
   opacity: 0.8;
 }
 
-.no-room-screen {
+.matching-screen {
   flex: 1;
   display: flex;
-  justify-content: center;
-  align-items: center;
+  justify-content: flex-start;
+  align-items: flex-start;
   z-index: 2;
   position: relative;
+  padding: 40px 20px;
   user-select: none;
 }
 
-.no-room-message {
-  text-align: center;
+.matching-loading {
+  font-family: 'DotGothic16', monospace;
   color: #00ff00;
-  border: 2px solid #00ff00;
-  padding: 2rem;
-  background: rgba(0, 17, 0, 0.8);
+  font-size: 0.9rem;
+  line-height: 1.6;
 }
 
-.no-room-message h2 {
-  font-size: 1.2rem;
-  margin-bottom: 1rem;
-  text-shadow: 0 0 10px #00ff00;
+.match1 {
+  animation: typewriter 1.0s steps(20, end) 0s forwards;
 }
 
-.reset-timer {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #ffff00;
-  text-shadow: 0 0 10px #ffff00;
+.match2 {
+  animation: typewriter 1.2s steps(22, end) 1.0s forwards;
+}
+
+.match3 {
+  animation: typewriter 1.1s steps(25, end) 2.2s forwards;
+}
+
+.match4 {
+  animation: typewriter 1.0s steps(18, end) 3.3s forwards;
+}
+
+.match5 {
+  animation: typewriter 1.5s steps(35, end) 4.3s forwards;
+  color: #ffaa00;
+  text-shadow: 0 0 5px #ffaa00;
+}
+
+.match5.waiting {
+  animation: typewriter-waiting 1.5s steps(35, end) 4.3s forwards;
+}
+
+@keyframes typewriter-waiting {
+  from {
+    width: 0;
+    opacity: 1;
+  }
+  to {
+    width: 100%;
+    opacity: 1;
+  }
+}
+
+.matching-info {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #004400;
+}
+
+.matching-info .info-line {
+  font-size: 0.8rem;
+  color: #00aa00;
+  margin-bottom: 8px;
+  opacity: 0.9;
 }
 
 .chat-container {
@@ -902,10 +1080,46 @@ onUnmounted(() => {
   text-shadow: 0 0 5px #ffaa00;
 }
 
+.processed-header {
+  background: #001100;
+  padding: 2px 6px;
+  margin-bottom: 6px;
+  font-size: 0.6rem;
+  font-family: 'Courier New', monospace;
+  border-bottom: 1px solid #004400;
+}
+
+.processed-label {
+  color: #ffaa00;
+  font-weight: bold;
+  text-shadow: 0 0 3px #ffaa00;
+}
+
 .message-content {
   margin-bottom: 5px;
   line-height: 1.4;
   font-size: 0.9rem;
+}
+
+.censored-text {
+  color: #ff4444 !important;
+  font-weight: bold !important;
+  text-shadow: 0 0 3px #ff4444 !important;
+  background: rgba(255, 68, 68, 0.2) !important;
+  padding: 1px 2px !important;
+  border-radius: 2px !important;
+}
+
+.message-content .censored-text {
+  color: #ff4444 !important;
+}
+
+.own-message .message-bubble .censored-text {
+  color: #ff4444 !important;
+}
+
+.other-message .message-bubble .censored-text {
+  color: #ff4444 !important;
 }
 
 .message-time {
@@ -914,27 +1128,77 @@ onUnmounted(() => {
   text-align: right;
 }
 
+.dos-conversion {
+  font-family: 'Courier New', monospace;
+  background: #000000;
+  border: 2px inset #666666;
+  padding: 8px;
+  color: #c0c0c0;
+  font-size: 0.7rem;
+}
+
+.dos-header {
+  color: #ffffff;
+  margin-bottom: 4px;
+  font-weight: bold;
+}
+
+.dos-binary {
+  color: #00ff00;
+  word-break: break-all;
+  line-height: 1.1;
+  max-height: 50px;
+  overflow-y: auto;
+  margin: 4px 0;
+  font-family: 'Courier New', monospace;
+}
+
+.dos-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.dos-prompt {
+  color: #ffffff;
+}
+
+.dos-command {
+  color: #ffff00;
+}
+
 .processing-indicator {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.dot-animation {
+.dos-dots {
   display: flex;
-  gap: 2px;
+  gap: 1px;
 }
 
-.dot-animation span {
-  animation: dot-blink 1.4s infinite both;
+.dos-dots span {
+  color: #c0c0c0;
+  animation: dos-blink 1.2s infinite both;
 }
 
-.dot-animation span:nth-child(2) {
+.dos-dots span:nth-child(2) {
   animation-delay: 0.2s;
 }
 
-.dot-animation span:nth-child(3) {
+.dos-dots span:nth-child(3) {
   animation-delay: 0.4s;
+}
+
+@keyframes dos-blink {
+  0%, 80%, 100% {
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
 }
 
 @keyframes dot-blink {
@@ -1075,13 +1339,12 @@ onUnmounted(() => {
     font-size: 0.9rem;
   }
   
-  .no-room-message {
-    padding: 1rem;
-    margin: 0 10px;
+  .matching-screen {
+    padding: 20px 15px;
   }
   
-  .no-room-message h2 {
-    font-size: 1rem;
+  .matching-loading {
+    font-size: 0.8rem;
   }
   
   .messages {
@@ -1131,12 +1394,12 @@ onUnmounted(() => {
     padding: 8px 10px;
   }
   
-  .no-room-message {
-    padding: 0.8rem;
+  .matching-screen {
+    padding: 15px 10px;
   }
   
-  .no-room-message h2 {
-    font-size: 0.9rem;
+  .matching-loading {
+    font-size: 0.7rem;
   }
 }
 </style>
