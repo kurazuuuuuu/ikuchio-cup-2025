@@ -5,6 +5,6 @@ metadata:
   namespace: ikuchio-cup-2025
 spec:
   domains:
-    - ikuchio-cup-2025.com
-    - www.ikuchio-cup-2025.com
-    - api.ikuchio-cup-2025.com
+    - ikuchio-cup-2025-vrcat.com
+    - www.ikuchio-cup-2025-vrcat.com
+    - api.ikuchio-cup-2025-vrcat.com

@@ -83,9 +83,9 @@ steps:
         # Apply all manifests
         kubectl apply -f k8s/
         
-        # Wait for rollout
-        kubectl rollout status deployment/ikuchio-backend -n ikuchio-cup-2025 --timeout=300s
-        kubectl rollout status deployment/ikuchio-frontend -n ikuchio-cup-2025 --timeout=300s
+        # Force delete old pods to speed up deployment
+        kubectl delete pods -n ikuchio-cup-2025 -l app=ikuchio-backend --force --grace-period=0 || true
+        kubectl delete pods -n ikuchio-cup-2025 -l app=ikuchio-frontend --force --grace-period=0 || true
     id: 'deploy-gke'
     waitFor: ['backend-push', 'frontend-push', 'create-secret']
 
@@ -95,7 +95,7 @@ images:
 
 serviceAccount: 'projects/ikuchio-cup-2025/serviceAccounts/ikuchio-cicd@ikuchio-cup-2025.iam.gserviceaccount.com'
 
-timeout: '300s'
+timeout: '600s'
 
 options:
   machineType: 'E2_HIGHCPU_8'

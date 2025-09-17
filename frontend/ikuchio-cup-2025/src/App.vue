@@ -110,8 +110,8 @@ const getApiBase = () => {
     return 'http://localhost:8000'
   }
   // GKE LoadBalancer IP を使用
-  if (hostname === 'ikuchio-cup-2025.com' || hostname.includes('ikuchio-cup-2025.com')) {
-    return 'https://api.ikuchio-cup-2025.com'
+  if (hostname === 'ikuchio-cup-2025-vrcat.com' || hostname.includes('ikuchio-cup-2025-vrcat.com')) {
+    return 'https://api.ikuchio-cup-2025-vrcat.com'
   }
   // フォールバック: LoadBalancer IP
   return 'http://35.243.125.105:8000'
@@ -311,8 +311,8 @@ const connectWebSocket = () => {
       return `ws://localhost:8000/ws/${roomId.value}`
     }
     // GKE ドメイン経由
-    if (hostname === 'ikuchio-cup-2025.com' || hostname.includes('ikuchio-cup-2025.com')) {
-      return `wss://api.ikuchio-cup-2025.com/ws/${roomId.value}`
+    if (hostname === 'ikuchio-cup-2025-vrcat.com' || hostname.includes('ikuchio-cup-2025-vrcat.com')) {
+      return `wss://api.ikuchio-cup-2025-vrcat.com/ws/${roomId.value}`
     }
     // フォールバック: LoadBalancer IP
     return `ws://35.243.125.105:8000/ws/${roomId.value}`

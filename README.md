@@ -50,24 +50,27 @@
   - Vue.js 3 (TypeScript)
   - Vite (ビルドツール)
   - PWA (Progressive Web App)
-  - Google Cloud | Firebase Authentication (匿名認証)
+  - Firebase Authentication (匿名認証)
   - レトロターミナル風UI (CRT効果、タイプライター、スキャンライン)
 
 - **バックエンド**：  
   - FastAPI (Python)
   - WebSocket (リアルタイム通信)
+  - uvicorn (ASGIサーバー)
 
 - **データベース**：  
-  - Google Cloud |  Firestore (NoSQL)
+  - Google Cloud Firestore (NoSQL)
 
-- **AI**
-  - Google Cloud | VertexAI Gemini 2.5 Pro (メッセージ処理・匿名化)
+- **AI**：
+  - Google Cloud Vertex AI Gemini 2.5 Pro (メッセージ処理・匿名化)
 
 - **インフラ**：
-  - Google Cloud | Secret Manager (API Key管理)
-  - Google Cloud | GKE (Kubernetesコンテナホスティング)
-  - Google Cloud | Cloud Build (CI/CD)
+  - Google Cloud GKE (Kubernetesコンテナオーケストレーション)
+  - Google Cloud DNS (ドメイン管理)
+  - Google Cloud Secret Manager (API Key管理)
+  - Google Cloud Build (CI/CD)
   - Docker (コンテナ化)
+  - Kubernetes (Pod管理、自動スケーリング、ロードバランシング)
   - GitHub (ソースコード管理)
 
 ## 開発環境
@@ -113,6 +116,9 @@ echo "YOUR_GEMINI_API_KEY" | gcloud secrets create google-vertexai-api-key --dat
 # GKEクラスター作成
 ./setup-gke.sh
 
+# DNS設定
+./setup-dns.sh
+
 # 手動でKubernetesマニフェストを適用
 kubectl apply -f k8s/
 ```
@@ -125,6 +131,35 @@ git push origin main
 # 手動デプロイ
 gcloud builds submit --config cloudbuild.yaml .
 ```
+
+### 現在のアクセスURL
+- **フロントエンド**: http://35.187.202.58
+- **バックエンド**: http://35.243.125.105:8000
+- **DNS反映後**: https://ikuchio-cup-2025-vrcat.com
+
+## 現在のインフラ構成
+
+### GKEクラスター
+- **クラスター名**: ikuchio-cluster
+- **リージョン**: asia-northeast1
+- **ノードタイプ**: e2-medium
+- **ノード数**: 1-3 (自動スケーリング)
+
+### Pod構成
+- **Backend**: 1レプリカ (CPU: 100m-200m, Memory: 256Mi-512Mi)
+- **Frontend**: 1レプリカ (CPU: 100m-200m, Memory: 128Mi-256Mi)
+- **自動スケーリング**: CPU 70%でスケールアウト
+
+### ネットワーク
+- **静的IP**: 34.54.141.104
+- **LoadBalancer IP**: 
+  - Frontend: 35.187.202.58
+  - Backend: 35.243.125.105
+- **DNS**: ikuchio-cup-2025-vrcat.com (Google Cloud DNS)
+
+### SSL証明書
+- **Google管理SSL**: 自動発行・更新
+- **ドメイン**: ikuchio-cup-2025-vrcat.com, api.ikuchio-cup-2025-vrcat.com
 
 ## 運用情報
 ### API エンドポイント
@@ -193,13 +228,50 @@ WS /ws/{room_id}
 ## アーキテクチャ
 
 ```
-[ユーザー] → [Vue.js Frontend] → [Firebase Auth] → [GKE Backend] → [Firestore]
-                    ↓                                     ↓
-              [WebSocket]  ←  ←  ←  ←  ←  ←  ←  [Gemini AI]
+[ユーザー] → [Google Cloud DNS] → [GKE Ingress] → [LoadBalancer]
+                                            ↓
+                                    [Frontend Pod] → [Firebase Auth]
+                                            ↓
+                                    [Backend Pod] → [Firestore]
+                                            ↓
+                                    [WebSocket] ← [Vertex AI Gemini]
 ```
 
 ### セキュリティ
 - Firebase匿名認証による安全なユーザー識別
 - Firebase Admin SDKによるサーバーサイド認証
-- Gemini AIによる個人情報の自動匿名化
+- Vertex AI Geminiによる個人情報の自動匿名化
 - Secret Managerによる機密情報管理
+- Kubernetes RBACによるアクセス制御
+- Workload IdentityによるGCPサービス連携
+
+## モニタリング・トラブルシューティング
+
+### ステータス確認
+```bash
+# Pod状態確認
+kubectl get pods -n ikuchio-cup-2025
+
+# サービス確認
+kubectl get services -n ikuchio-cup-2025
+
+# Ingress確認
+kubectl get ingress -n ikuchio-cup-2025
+
+# ログ確認
+kubectl logs -f deployment/ikuchio-backend -n ikuchio-cup-2025
+```
+
+### トラブルシューティング
+```bash
+# Pod再起動
+kubectl rollout restart deployment/ikuchio-backend -n ikuchio-cup-2025
+
+# Secret再作成
+kubectl delete secret google-vertexai-api-key -n ikuchio-cup-2025
+API_KEY=$(gcloud secrets versions access latest --secret="google-vertexai-api-key")
+kubectl create secret generic google-vertexai-api-key --from-literal=key="$API_KEY" -n ikuchio-cup-2025
+
+# 強制Pod削除（スタック時）
+kubectl delete pods -l app=ikuchio-backend -n ikuchio-cup-2025 --force --grace-period=0
+```

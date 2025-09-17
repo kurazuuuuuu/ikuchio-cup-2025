@@ -9,7 +9,7 @@ metadata:
     kubernetes.io/ingress.class: "gce"
 spec:
   rules:
-  - host: ikuchio-cup-2025.com
+  - host: ikuchio-cup-2025-vrcat.com
     http:
       paths:
       - path: /*
@@ -19,7 +19,7 @@ spec:
             name: ikuchio-frontend-service
             port:
               number: 80
-  - host: api.ikuchio-cup-2025.com
+  - host: api.ikuchio-cup-2025-vrcat.com
     http:
       paths:
       - path: /*

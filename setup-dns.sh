@@ -4,7 +4,7 @@
 set -e
 
 PROJECT_ID="ikuchio-cup-2025"
-DOMAIN="ikuchio-cup-2025.com"
+DOMAIN="ikuchio-cup-2025-vrcat.com"
 ZONE_NAME="ikuchio-zone"
 STATIC_IP="34.54.141.104"
 
