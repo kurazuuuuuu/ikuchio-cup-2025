@@ -25,16 +25,6 @@ spec:
         pathType: ImplementationSpecific
         backend:
           service:
-            name: ikuchio-backend-service
-            port:
-              number: 8000
-  - host: api-ikuchio-cup-2025.krz-tech.net
-    http:
-      paths:
-      - path: /*
-        pathType: ImplementationSpecific
-        backend:
-          service:
-            name: ikuchio-backend-service
+            name: backend-lb
             port:
               number: 8000
