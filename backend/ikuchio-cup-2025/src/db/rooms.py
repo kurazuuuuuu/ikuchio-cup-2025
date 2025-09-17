@@ -10,11 +10,13 @@ def get_db():
 db = get_db()
 
 def create_room_with_random_users():
-    # 全ユーザーを取得（効率化のため制限付き）
+    # ルーム未割り当てのユーザーのみ取得
     users_ref = db.collection("users")
-    users_docs = users_ref.limit(10).get()  # 2人必要だが余裕を持って10人取得
+    query = users_ref.where("room_id", "==", None).limit(10)
+    users_docs = query.get()
     
     if len(users_docs) < 2:
+        print(f"[Room Debug] Not enough unassigned users: {len(users_docs)}")
         return None
     
     # ランダムに2名選択
@@ -35,7 +37,14 @@ def create_room_with_random_users():
     }
     
     try:
+        # ルーム作成
         db.collection("rooms").document(room_id).set(room_data)
+        
+        # ユーザーにルームIDを割り当て
+        selected_users[0].reference.update({"room_id": room_id})
+        selected_users[1].reference.update({"room_id": room_id})
+        
+        print(f"[Room Debug] Created room {room_id} for users {user1_id} and {user2_id}")
         return room_data
     except Exception as e:
         print(f"Error creating room: {e}")
