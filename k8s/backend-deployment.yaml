@@ -13,6 +13,18 @@ spec:
       labels:
         app: ikuchio-backend
     spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - ikuchio-backend
+              topologyKey: kubernetes.io/hostname
       containers:
       - name: backend
         image: gcr.io/ikuchio-cup-2025/ikuchio-backend:latest
@@ -28,7 +40,22 @@ spec:
             secretKeyRef:
               name: google-vertexai-api-key
               key: key
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
         resources:
           requests:
-            memory: "256Mi"
-            cpu: "250m"
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
