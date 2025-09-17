@@ -9,20 +9,10 @@ class RoomScheduler:
         self.running = False
     
     def get_next_reset_time(self):
-        """次の15分区切りの時刻を取得"""
+        """次の日本時間0:00の時刻を取得"""
         now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
-        # 現在の分を15分区切りに調整
-        next_minute = ((now.minute // 15) + 1) * 15
-        if next_minute >= 60:
-            next_hour = now.hour + 1
-            next_minute = 0
-        else:
-            next_hour = now.hour
-        
-        next_reset = now.replace(hour=next_hour, minute=next_minute, second=0, microsecond=0)
-        if next_reset <= now:
-            next_reset += datetime.timedelta(hours=1)
-        
+        # 翌日の0:00を取得
+        next_reset = now.replace(hour=0, minute=0, second=0, microsecond=0) + datetime.timedelta(days=1)
         return next_reset
     
     async def reset_all_rooms(self):
@@ -45,12 +35,14 @@ class RoomScheduler:
                 now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
                 sleep_seconds = (next_reset - now).total_seconds()
                 
-                print(f"[Scheduler] Next reset at {next_reset.strftime('%H:%M')}, sleeping for {sleep_seconds:.0f} seconds")
+                print(f"[Scheduler] Next reset at {next_reset.strftime('%Y-%m-%d %H:%M JST')}, sleeping for {sleep_seconds:.0f} seconds")
                 
                 await asyncio.sleep(sleep_seconds)
                 
                 if self.running:
-                    await self.reset_all_rooms()
+                    print(f"[Scheduler] Executing daily room reset at {datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9))).strftime('%Y-%m-%d %H:%M:%S JST')}")
+                    result = await self.reset_all_rooms()
+                    print(f"[Scheduler] Room reset completed: {result}")
                     
             except Exception as e:
                 print(f"[Scheduler] Error in scheduler loop: {e}")
