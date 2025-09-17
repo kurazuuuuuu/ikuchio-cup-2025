@@ -844,7 +844,7 @@ onUnmounted(() => {
   flex: 1;
   overflow-y: auto;
   padding: 20px;
-  padding-bottom: 100px;
+  padding-bottom: 150px;
   background: transparent;
   z-index: 2;
   position: relative;
@@ -1086,6 +1086,7 @@ onUnmounted(() => {
   
   .messages {
     padding: 10px;
+    padding-bottom: 180px;
   }
   
   .message-bubble {
