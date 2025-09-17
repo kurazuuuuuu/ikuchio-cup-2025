@@ -1,0 +1,9 @@
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: ikuchio-ssl-cert
+  namespace: ikuchio-cup-2025
+spec:
+  domains:
+    - ikuchio-cup-2025.com
+    - www.ikuchio-cup-2025.com

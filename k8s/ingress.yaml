@@ -1,0 +1,35 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ikuchio-ingress
+  namespace: ikuchio-cup-2025
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "ikuchio-ip"
+    networking.gke.io/managed-certificates: "ikuchio-ssl-cert"
+    kubernetes.io/ingress.class: "gce"
+spec:
+  rules:
+  - host: ikuchio-cup-2025.com
+    http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: ikuchio-backend-service
+            port:
+              number: 8000
+      - path: /ws/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: ikuchio-backend-service
+            port:
+              number: 8000
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: ikuchio-frontend-service
+            port:
+              number: 80

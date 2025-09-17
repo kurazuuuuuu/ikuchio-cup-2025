@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ikuchio-backend
+  namespace: ikuchio-cup-2025
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ikuchio-backend
+  template:
+    metadata:
+      labels:
+        app: ikuchio-backend
+    spec:
+      serviceAccountName: ikuchio-gke-sa
+      containers:
+      - name: backend
+        image: gcr.io/ikuchio-cup-2025/ikuchio-backend:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: GOOGLE_CLOUD_PROJECT
+          value: "ikuchio-cup-2025"
+        - name: ENVIRONMENT
+          value: "production"
+        - name: API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: google-vertexai-api-key
+              key: key
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5

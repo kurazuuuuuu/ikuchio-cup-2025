@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ikuchio-backend-service
+  namespace: ikuchio-cup-2025
+spec:
+  selector:
+    app: ikuchio-backend
+  ports:
+  - port: 8000
+    targetPort: 8000
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ikuchio-frontend-service
+  namespace: ikuchio-cup-2025
+spec:
+  selector:
+    app: ikuchio-frontend
+  ports:
+  - port: 80
+    targetPort: 80
+  type: ClusterIP

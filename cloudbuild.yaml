@@ -1,10 +1,12 @@
 steps:
-  # Build and push backend (combined)
+  # Build and push backend
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
       - '-t'
       - 'gcr.io/$PROJECT_ID/ikuchio-backend:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/ikuchio-backend:latest'
       - '--cache-from'
       - 'gcr.io/$PROJECT_ID/ikuchio-backend:latest'
       - '--build-arg'
@@ -14,12 +16,14 @@ steps:
       - 'backend/ikuchio-cup-2025'
     id: 'backend-build'
 
-  # Build and push frontend (combined)
+  # Build and push frontend
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
       - '-t'
       - 'gcr.io/$PROJECT_ID/ikuchio-frontend:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/ikuchio-frontend:latest'
       - '--cache-from'
       - 'gcr.io/$PROJECT_ID/ikuchio-frontend:latest'
       - '--build-arg'
@@ -29,55 +33,61 @@ steps:
       - 'frontend/ikuchio-cup-2025'
     id: 'frontend-build'
 
-  # Push images in parallel
+  # Push images
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/ikuchio-backend:$COMMIT_SHA']
+    args: ['push', '--all-tags', 'gcr.io/$PROJECT_ID/ikuchio-backend']
     id: 'backend-push'
     waitFor: ['backend-build']
 
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/ikuchio-frontend:$COMMIT_SHA']
+    args: ['push', '--all-tags', 'gcr.io/$PROJECT_ID/ikuchio-frontend']
     id: 'frontend-push'
     waitFor: ['frontend-build']
 
-  # Deploy in parallel
+  # Get GKE credentials
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'gcloud'
     args:
-      - 'run'
-      - 'deploy'
-      - 'ikuchio-backend'
-      - '--image=gcr.io/$PROJECT_ID/ikuchio-backend:$COMMIT_SHA'
+      - 'container'
+      - 'clusters'
+      - 'get-credentials'
+      - 'ikuchio-cluster'
       - '--region=asia-northeast1'
-      - '--platform=managed'
-      - '--allow-unauthenticated'
-      - '--set-secrets=API_KEY=google-vertexai-api-key:latest'
-      - '--service-account=ikuchio-cicd@ikuchio-cup-2025.iam.gserviceaccount.com'
-      - '--set-env-vars=GOOGLE_CLOUD_PROJECT=ikuchio-cup-2025,ENVIRONMENT=production'
-      - '--timeout=900'
-      - '--port=8000'
-      - '--cpu=2'
-      - '--memory=2Gi'
-      - '--max-instances=10'
-      - '--min-instances=0'
-    id: 'backend-deploy'
-    waitFor: ['backend-push']
+    id: 'get-credentials'
+    waitFor: ['-']
 
+  # Create secret from Secret Manager
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: 'gcloud'
+    entrypoint: 'bash'
     args:
-      - 'run'
-      - 'deploy'
-      - 'ikuchio-frontend'
-      - '--image=gcr.io/$PROJECT_ID/ikuchio-frontend:$COMMIT_SHA'
-      - '--region=asia-northeast1'
-      - '--platform=managed'
-      - '--allow-unauthenticated'
-      - '--service-account=ikuchio-cicd@ikuchio-cup-2025.iam.gserviceaccount.com'
-      - '--max-instances=10'
-      - '--min-instances=0'
-    id: 'frontend-deploy'
-    waitFor: ['frontend-push']
+      - '-c'
+      - |
+        API_KEY=$$(gcloud secrets versions access latest --secret="google-vertexai-api-key")
+        kubectl create secret generic google-vertexai-api-key \
+          --from-literal=key="$$API_KEY" \
+          --namespace=ikuchio-cup-2025 \
+          --dry-run=client -o yaml | kubectl apply -f -
+    id: 'create-secret'
+    waitFor: ['get-credentials']
+
+  # Deploy to GKE
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        # Update image tags in deployments
+        sed -i "s|gcr.io/ikuchio-cup-2025/ikuchio-backend:latest|gcr.io/$PROJECT_ID/ikuchio-backend:$COMMIT_SHA|g" k8s/backend-deployment.yaml
+        sed -i "s|gcr.io/ikuchio-cup-2025/ikuchio-frontend:latest|gcr.io/$PROJECT_ID/ikuchio-frontend:$COMMIT_SHA|g" k8s/frontend-deployment.yaml
+        
+        # Apply all manifests
+        kubectl apply -f k8s/
+        
+        # Wait for rollout
+        kubectl rollout status deployment/ikuchio-backend -n ikuchio-cup-2025 --timeout=300s
+        kubectl rollout status deployment/ikuchio-frontend -n ikuchio-cup-2025 --timeout=300s
+    id: 'deploy-gke'
+    waitFor: ['backend-push', 'frontend-push', 'create-secret']
 
 images:
   - 'gcr.io/$PROJECT_ID/ikuchio-backend:$COMMIT_SHA'

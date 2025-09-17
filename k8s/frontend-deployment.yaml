@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ikuchio-frontend
+  namespace: ikuchio-cup-2025
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ikuchio-frontend
+  template:
+    metadata:
+      labels:
+        app: ikuchio-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: gcr.io/ikuchio-cup-2025/ikuchio-frontend:latest
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5

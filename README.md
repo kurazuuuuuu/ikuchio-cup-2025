@@ -65,7 +65,7 @@
 
 - **インフラ**：
   - Google Cloud | Secret Manager (API Key管理)
-  - Google Cloud | Cloud Run (コンテナホスティング)
+  - Google Cloud | GKE (Kubernetesコンテナホスティング)
   - Google Cloud | Cloud Build (CI/CD)
   - Docker (コンテナ化)
   - GitHub (ソースコード管理)
@@ -106,6 +106,15 @@ gcloud config set project ikuchio-cup-2025
 
 # Secret Manager設定
 echo "YOUR_GEMINI_API_KEY" | gcloud secrets create google-vertexai-api-key --data-file=-
+```
+
+### GKE セットアップ
+```bash
+# GKEクラスター作成
+./setup-gke.sh
+
+# 手動でKubernetesマニフェストを適用
+kubectl apply -f k8s/
 ```
 
 ### デプロイ
@@ -184,9 +193,9 @@ WS /ws/{room_id}
 ## アーキテクチャ
 
 ```
-[ユーザー] → [Vue.js Frontend] → [Firebase Auth] → [Cloud Run Backend] → [Firestore]
-                    ↓                                        ↓
-              [WebSocket]  ←  ←  ←  ←  ←  ←  ←  ←  [Gemini AI]
+[ユーザー] → [Vue.js Frontend] → [Firebase Auth] → [GKE Backend] → [Firestore]
+                    ↓                                     ↓
+              [WebSocket]  ←  ←  ←  ←  ←  ←  ←  [Gemini AI]
 ```
 
 ### セキュリティ
