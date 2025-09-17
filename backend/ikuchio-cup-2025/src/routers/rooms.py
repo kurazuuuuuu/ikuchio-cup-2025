@@ -2,7 +2,6 @@ from fastapi import APIRouter
 import uvicorn
 
 from db.rooms import firestore_get_room, firestore_get_all_rooms, firestore_reset_all_rooms, create_room_with_random_users, firestore_send_message, firestore_get_messages
-from gcp.image_gemini import generate_image
 from pydantic import BaseModel
 
 class MessageCreate(BaseModel):
@@ -72,12 +71,3 @@ async def send_message_plural(room_id: str, message_data: MessageCreate):
     except Exception as e:
         return {"error": f"Failed to send message: {str(e)}"}
     
-@rooms_router.get("/api/rooms/{room_id}/generate_image")
-async def generate_image_for_room(room_id: str):
-    try:
-        image_url = generate_image(room_id)
-        return {"image_url": image_url}
-    except ValueError as ve:
-        return {"error": f"Image prompt generation failed: {str(ve)}"}
-    except Exception as e:
-        return {"error": f"Failed to generate image: {str(e)}"}
