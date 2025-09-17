@@ -1,0 +1,35 @@
+steps:
+# Build backend
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/$PROJECT_ID/ikuchio-backend:$BUILD_ID', '-t', 'gcr.io/$PROJECT_ID/ikuchio-backend:latest', './backend/ikuchio-cup-2025']
+  
+# Build frontend
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/$PROJECT_ID/ikuchio-frontend:$BUILD_ID', '-t', 'gcr.io/$PROJECT_ID/ikuchio-frontend:latest', './frontend/ikuchio-cup-2025']
+
+# Push backend image
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'gcr.io/$PROJECT_ID/ikuchio-backend:$BUILD_ID']
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'gcr.io/$PROJECT_ID/ikuchio-backend:latest']
+
+# Push frontend image
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'gcr.io/$PROJECT_ID/ikuchio-frontend:$BUILD_ID']
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'gcr.io/$PROJECT_ID/ikuchio-frontend:latest']
+
+# Deploy to production cluster
+- name: 'gcr.io/cloud-builders/gke-deploy'
+  args:
+  - run
+  - --filename=k8s/prod/
+  - --cluster=ikuchio-prod-cluster
+  - --location=asia-northeast1
+  - --namespace=ikuchio-prod
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'
+
+timeout: '1200s'
