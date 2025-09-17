@@ -3,6 +3,7 @@ import uuid
 import datetime
 import random
 from gcp.gemini import generate
+import json
 
 def get_db():
     return gcp.firestore.get_firestore_client()
@@ -126,6 +127,15 @@ def firestore_get_messages(room_id: str):
         # ソートに失敗した場合はそのまま返す
     
     return messages
+
+def get_room_processed_texts_json(room_id: str):
+    messages = firestore_get_messages(room_id)
+    texts = []
+    for msg in messages:
+        processed = msg.get("processed_text")
+        if processed:
+            texts.append({"text": processed})
+    return json.dumps(texts, ensure_ascii=False)
 
 def _clear_all_data():
     """Delete all rooms and messages from database"""
