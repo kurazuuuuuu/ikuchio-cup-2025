@@ -81,7 +81,7 @@ def generate(input_text):
 処理: その地名を直接使わず、必ず東西南北を用いた方角や位置関係で表現してください。(例: 九州地方 → 西の地方, 東京駅 → 東の地方の中心駅)
 """
 
-  model = "gemini-2.5-flash-lite"
+  model = "gemini-2.5-flash"
   contents = [
     types.Content(
       role="user",
