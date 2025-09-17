@@ -369,10 +369,9 @@ const updateTimer = () => {
     if (timerInterval) {
       clearInterval(timerInterval)
     }
-    // 定時リセット時にユーザーデータを更新してからリロード
-    setTimeout(async () => {
-      await refreshUserData()
-      window.location.reload()
+    // 定時リセット時に強制リロード
+    setTimeout(() => {
+      window.location.href = window.location.href
     }, 1000)
   }
 }
@@ -844,7 +843,7 @@ onUnmounted(() => {
   flex: 1;
   overflow-y: auto;
   padding: 20px;
-  padding-bottom: 150px;
+  padding-bottom: 20px;
   background: transparent;
   z-index: 2;
   position: relative;
@@ -950,10 +949,7 @@ onUnmounted(() => {
   display: flex;
   gap: 10px;
   z-index: 2;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  position: relative;
   transition: transform 0.3s ease;
 }
 
@@ -1086,7 +1082,6 @@ onUnmounted(() => {
   
   .messages {
     padding: 10px;
-    padding-bottom: 180px;
   }
   
   .message-bubble {
