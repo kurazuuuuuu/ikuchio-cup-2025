@@ -114,7 +114,7 @@ const getApiBase = () => {
     return 'https://api.ikuchio-cup-2025-vrcat.com'
   }
   // フォールバック: LoadBalancer IP
-  return 'http://35.243.125.105:8000'
+  return 'http://34.146.255.229:8000'
 }
 
 const API_BASE = getApiBase()
@@ -315,7 +315,7 @@ const connectWebSocket = () => {
       return `wss://api.ikuchio-cup-2025-vrcat.com/ws/${roomId.value}`
     }
     // フォールバック: LoadBalancer IP
-    return `ws://35.243.125.105:8000/ws/${roomId.value}`
+    return `ws://34.146.255.229:8000/ws/${roomId.value}`
   }
   
   const wsUrl = getWsUrl()

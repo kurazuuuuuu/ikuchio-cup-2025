@@ -51,7 +51,7 @@ steps:
       - 'container'
       - 'clusters'
       - 'get-credentials'
-      - 'ikuchio-cluster'
+      - 'autopilot-cluster-1'
       - '--region=asia-northeast1'
     id: 'get-credentials'
     waitFor: ['-']

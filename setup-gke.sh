@@ -4,7 +4,7 @@
 set -e
 
 PROJECT_ID="ikuchio-cup-2025"
-CLUSTER_NAME="ikuchio-cluster"
+CLUSTER_NAME="autopilot-cluster-1"
 REGION="asia-northeast1"
 
 echo "Setting up GKE cluster for ikuchio-cup-2025..."

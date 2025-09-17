@@ -13,7 +13,6 @@ spec:
       labels:
         app: ikuchio-backend
     spec:
-      serviceAccountName: ikuchio-gke-sa
       containers:
       - name: backend
         image: gcr.io/ikuchio-cup-2025/ikuchio-backend:latest
@@ -32,19 +31,4 @@ spec:
         resources:
           requests:
             memory: "256Mi"
-            cpu: "100m"
-          limits:
-            memory: "512Mi"
-            cpu: "200m"
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 5
-          periodSeconds: 5
+            cpu: "250m"
