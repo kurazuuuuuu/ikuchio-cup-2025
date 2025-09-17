@@ -4,7 +4,7 @@ metadata:
   name: ikuchio-frontend
   namespace: ikuchio-cup-2025
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: ikuchio-frontend

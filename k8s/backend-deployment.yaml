@@ -4,7 +4,7 @@ metadata:
   name: ikuchio-backend
   namespace: ikuchio-cup-2025
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: ikuchio-backend
@@ -31,11 +31,11 @@ spec:
               key: key
         resources:
           requests:
-            memory: "1Gi"
-            cpu: "500m"
+            memory: "256Mi"
+            cpu: "100m"
           limits:
-            memory: "2Gi"
-            cpu: "1000m"
+            memory: "512Mi"
+            cpu: "200m"
         livenessProbe:
           httpGet:
             path: /health

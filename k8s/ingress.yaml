@@ -12,20 +12,6 @@ spec:
   - host: ikuchio-cup-2025.com
     http:
       paths:
-      - path: /api/*
-        pathType: ImplementationSpecific
-        backend:
-          service:
-            name: ikuchio-backend-service
-            port:
-              number: 8000
-      - path: /ws/*
-        pathType: ImplementationSpecific
-        backend:
-          service:
-            name: ikuchio-backend-service
-            port:
-              number: 8000
       - path: /*
         pathType: ImplementationSpecific
         backend:
@@ -33,3 +19,13 @@ spec:
             name: ikuchio-frontend-service
             port:
               number: 80
+  - host: api.ikuchio-cup-2025.com
+    http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: ikuchio-backend-service
+            port:
+              number: 8000
