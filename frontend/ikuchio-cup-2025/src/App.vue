@@ -454,7 +454,7 @@ onUnmounted(() => {
 <style scoped>
 #app {
   font-family: 'DotGothic16', monospace;
-  background: linear-gradient(135deg, #0a0a0a 0%, #0d0f0d 100%);
+  background: linear-gradient(135deg, #0a0f0a 0%, #0d120d 100%);
   color: #00ff00;
   height: 100vh;
   display: flex;
@@ -473,64 +473,27 @@ onUnmounted(() => {
   right: 0;
   bottom: 0;
   background: 
-    radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.3) 100%),
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 1px,
-      rgba(0, 255, 0, 0.08) 1px,
-      rgba(0, 255, 0, 0.08) 3px
-    );
+    radial-gradient(ellipse at center, transparent 60%, rgba(0, 0, 0, 0.4) 100%);
   pointer-events: none;
   z-index: 9999;
-  animation: flicker 0.3s infinite linear alternate, scanline 16s linear infinite;
+  animation: flicker 2s infinite linear alternate;
   border-radius: 15px;
-  box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.8);
-  will-change: opacity, filter;
-  transform: translateZ(0);
+  box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.6);
 }
 
 #app .mouse-noise {
-  content: '';
-  position: fixed;
-  width: 200px;
-  height: 200px;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 10000;
-  background: 
-    radial-gradient(circle, 
-      rgba(255, 255, 255, 0.1) 0%, 
-      rgba(0, 255, 0, 0.05) 30%, 
-      transparent 70%
-    );
-  animation: mouseNoise 0.2s infinite linear;
-  transform: translate(-50%, -50%) translateZ(0);
-  will-change: opacity, filter;
-}
-
-@keyframes mouseNoise {
-  0% { opacity: 0.8; filter: blur(0.5px); }
-  25% { opacity: 0.6; filter: blur(1px); }
-  50% { opacity: 0.9; filter: blur(0.3px); }
-  75% { opacity: 0.7; filter: blur(0.8px); }
-  100% { opacity: 0.8; filter: blur(0.5px); }
+  display: none;
 }
 
 @keyframes flicker {
-  0% { opacity: 0.95; }
-  100% { opacity: 1; }
+  0% { opacity: 0.97; }
+  50% { opacity: 0.99; }
+  100% { opacity: 0.98; }
 }
 
-@keyframes scanline {
-  0% { background-position: 0 0; }
-  100% { background-position: 0 100vh; }
-}
 
-.chat-screen, .login-screen {
-  will-change: transform;
-  transform: translateZ(0);
-}
+
+
 
 #app::before {
   content: '';
@@ -559,7 +522,7 @@ onUnmounted(() => {
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background: linear-gradient(135deg, #0a0a0a 0%, #0d0f0d 100%);
+  background: linear-gradient(135deg, #0a0f0a 0%, #0d120d 100%);
   color: #00ff00;
   position: relative;
   user-select: none;
@@ -575,9 +538,9 @@ onUnmounted(() => {
   background: repeating-linear-gradient(
     0deg,
     transparent,
-    transparent 2px,
-    rgba(0, 255, 0, 0.03) 2px,
-    rgba(0, 255, 0, 0.03) 4px
+    transparent 4px,
+    rgba(0, 255, 0, 0.02) 4px,
+    rgba(0, 255, 0, 0.02) 6px
   );
   pointer-events: none;
 }
@@ -631,7 +594,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: linear-gradient(135deg, #0a0a0a 0%, #0d0f0d 100%);
+  background: linear-gradient(135deg, #0a0f0a 0%, #0d120d 100%);
   position: relative;
 }
 
@@ -645,9 +608,9 @@ onUnmounted(() => {
   background: repeating-linear-gradient(
     0deg,
     transparent,
-    transparent 2px,
-    rgba(0, 255, 0, 0.03) 2px,
-    rgba(0, 255, 0, 0.03) 4px
+    transparent 4px,
+    rgba(0, 255, 0, 0.02) 4px,
+    rgba(0, 255, 0, 0.02) 6px
   );
   pointer-events: none;
   z-index: 1;
