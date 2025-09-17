@@ -32,9 +32,9 @@
         <div class="matching-loading">
           <div class="loading-line typewriter-line match1">[ OK ] User authenticated successfully...</div>
           <div class="loading-line typewriter-line match2">[ OK ] Connecting to matching server...</div>
-          <div class="loading-line typewriter-line match3">[ .. ] Searching for available partners<span class="cursor">_</span></div>
+          <div class="loading-line typewriter-line match3">[ .. ] Searching for available partners...</div>
           <div class="loading-line typewriter-line match4">[ .. ] Analyzing compatibility...</div>
-          <div class="loading-line typewriter-line match5 waiting">[ WAIT ] No partners found. Waiting for new connections...</div>
+          <div class="loading-line typewriter-line match5 waiting">[ WAIT ] No partners found. Waiting for new connections<span class="cursor">_</span></div>
           <div class="matching-info">
             <div class="info-line">Next matching cycle: {{ timeLeft }}</div>
             <div class="info-line">Status: STANDBY</div>
@@ -65,15 +65,12 @@
           <div v-if="sending" class="message-wrapper own-message">
             <div class="message-bubble processing">
               <div class="message-content">
-                <div class="dos-conversion">
-                  <div class="dos-header">C:\AI\PROCESS> CONVERTING MESSAGE...</div>
-                  <div class="dos-binary">{{ binaryText }}</div>
-                  <div class="dos-status">
-                    <span class="dos-prompt">C:\AI\PROCESS></span>
-                    <span class="dos-command">ANALYZE.EXE</span>
-                    <div class="dos-dots">
-                      <span>.</span><span>.</span><span>.</span>
-                    </div>
+                <div class="message-processing">
+                  <div class="processing-text">メッセージを処理中<span class="processing-cursor">_</span></div>
+                  <div class="processing-details">
+                    <div class="detail-line">Content verification...</div>
+                    <div class="detail-line">Safety check...</div>
+                    <div class="detail-line current">Finalizing<span class="dots">...</span></div>
                   </div>
                 </div>
               </div>
@@ -95,6 +92,17 @@
           <button @click="sendMessage" :disabled="!newMessage.trim() || sending">
             {{ sending ? '送信中...' : '送信' }}
           </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- ログアウト確認モーダル -->
+    <div v-if="showLogoutConfirm" class="logout-modal">
+      <div class="logout-dialog">
+        <div class="logout-message">Logoutしますか？</div>
+        <div class="logout-buttons">
+          <button @click="confirmLogout" class="confirm-btn">YES</button>
+          <button @click="cancelLogout" class="cancel-btn">NO</button>
         </div>
       </div>
     </div>
@@ -146,6 +154,7 @@ const loadingCompleted = ref<boolean>(false)
 const loggingIn = ref<boolean>(false)
 const binaryText = ref<string>('')
 const isRedMode = ref<boolean>(false)
+const showLogoutConfirm = ref<boolean>(false)
 const mouseX = ref<number>(0)
 const mouseY = ref<number>(0)
 
@@ -273,27 +282,6 @@ const stopMatchingCheck = () => {
   }
 }
 
-const startBinaryAnimation = (text: string) => {
-  const fullBinary = text.split('').map(char => 
-    char.charCodeAt(0).toString(2).padStart(8, '0')
-  ).join('')
-  
-  let bitIndex = 0
-  binaryText.value = ''
-  
-  binaryInterval = setInterval(() => {
-    if (bitIndex < fullBinary.length) {
-      binaryText.value += fullBinary[bitIndex]
-      bitIndex++
-    } else {
-      if (binaryInterval) {
-        clearInterval(binaryInterval)
-        binaryInterval = null
-      }
-    }
-  }, 100)
-}
-
 const stopBinaryAnimation = () => {
   if (binaryInterval) {
     clearInterval(binaryInterval)
@@ -323,7 +311,6 @@ const sendMessage = async () => {
   
   const messageText = newMessage.value
   sending.value = true
-  startBinaryAnimation(messageText)
   
   try {
     const response = await fetch(`${API_BASE}/api/room/${roomId.value}`, {
@@ -443,22 +430,27 @@ const startTimer = () => {
 const updateTimer = () => {
   const now = new Date()
   
-  // 次の15分区切りの時刻を計算
-  const nextReset = new Date(now)
-  const currentMinutes = now.getMinutes()
-  const nextMinutes = Math.ceil((currentMinutes + 1) / 15) * 15
+  // 日本時間で計算
+  const jstNow = new Date(now.getTime() + (9 * 60 * 60 * 1000))
   
-  if (nextMinutes >= 60) {
-    nextReset.setHours(now.getHours() + 1, 0, 0, 0)
-  } else {
-    nextReset.setMinutes(nextMinutes, 0, 0)
-  }
+  // 翌日の日本時間0:00を計算
+  const nextReset = new Date(jstNow)
+  nextReset.setUTCDate(nextReset.getUTCDate() + 1)
+  nextReset.setUTCHours(0, 0, 0, 0)
   
-  const diff = nextReset.getTime() - now.getTime()
-  const minutes = Math.floor(diff / (1000 * 60))
+  // UTCに戻す
+  const nextResetUTC = new Date(nextReset.getTime() - (9 * 60 * 60 * 1000))
+  
+  const diff = nextResetUTC.getTime() - now.getTime()
+  const hours = Math.floor(diff / (1000 * 60 * 60))
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
   const seconds = Math.floor((diff % (1000 * 60)) / 1000)
   
-  timeLeft.value = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+  if (hours > 0) {
+    timeLeft.value = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+  } else {
+    timeLeft.value = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+  }
   
   if (diff <= 0) {
     timeLeft.value = '00:00'
@@ -506,6 +498,10 @@ const handleKeydown = (event: KeyboardEvent) => {
 }
 
 const logout = () => {
+  showLogoutConfirm.value = true
+}
+
+const confirmLogout = () => {
   if (timerInterval) {
     clearInterval(timerInterval)
   }
@@ -516,7 +512,12 @@ const logout = () => {
   user.value = null
   roomId.value = ''
   messages.value = []
+  showLogoutConfirm.value = false
   startRedModeTimer()
+}
+
+const cancelLogout = () => {
+  showLogoutConfirm.value = false
 }
 
 let mouseThrottle = false
@@ -742,6 +743,72 @@ onUnmounted(() => {
 
 .login-screen.red-mode .typewriter::after {
   color: #ff0000 !important;
+}
+
+.logout-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+}
+
+.logout-dialog {
+  background: #001100;
+  border: 2px solid #00ff00;
+  padding: 20px;
+  font-family: 'DotGothic16', monospace;
+  color: #00ff00;
+  text-align: center;
+}
+
+.logout-message {
+  margin-bottom: 20px;
+  font-size: 1rem;
+  text-shadow: 0 0 5px #00ff00;
+}
+
+.logout-buttons {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+
+.logout-buttons button {
+  padding: 8px 16px;
+  font-family: 'DotGothic16', monospace;
+  font-size: 0.9rem;
+  background: transparent;
+  border: 1px solid;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.confirm-btn {
+  color: #ff4444;
+  border-color: #ff4444;
+}
+
+.confirm-btn:hover {
+  background: #ff4444;
+  color: #0a0a0a;
+  box-shadow: 0 0 10px #ff4444;
+}
+
+.cancel-btn {
+  color: #00ff00;
+  border-color: #00ff00;
+}
+
+.cancel-btn:hover {
+  background: #00ff00;
+  color: #0a0a0a;
+  box-shadow: 0 0 10px #00ff00;
 }
 
 .chat-screen {
@@ -1128,44 +1195,46 @@ onUnmounted(() => {
   text-align: right;
 }
 
-.dos-conversion {
-  font-family: 'Courier New', monospace;
-  background: #000000;
-  border: 2px inset #666666;
-  padding: 8px;
-  color: #c0c0c0;
-  font-size: 0.7rem;
+.message-processing {
+  font-family: 'DotGothic16', monospace;
+  background: rgba(0, 17, 0, 0.7);
+  border: 1px solid #004400;
+  padding: 10px;
+  color: #00aa00;
+  font-size: 0.8rem;
 }
 
-.dos-header {
-  color: #ffffff;
-  margin-bottom: 4px;
-  font-weight: bold;
-}
-
-.dos-binary {
+.processing-text {
+  margin-bottom: 6px;
   color: #00ff00;
-  word-break: break-all;
-  line-height: 1.1;
-  max-height: 50px;
-  overflow-y: auto;
-  margin: 4px 0;
-  font-family: 'Courier New', monospace;
 }
 
-.dos-status {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: 6px;
+.processing-details {
+  font-size: 0.7rem;
+  opacity: 0.7;
 }
 
-.dos-prompt {
-  color: #ffffff;
+.processing-details .detail-line {
+  margin-bottom: 2px;
+  color: #006600;
 }
 
-.dos-command {
-  color: #ffff00;
+.processing-details .detail-line.current {
+  color: #00aa00;
+  opacity: 1;
+}
+
+.processing-cursor {
+  animation: blink 1s infinite;
+}
+
+.dots {
+  animation: dot-fade 1.5s infinite;
+}
+
+@keyframes dot-fade {
+  0%, 33% { opacity: 0.3; }
+  66%, 100% { opacity: 1; }
 }
 
 .processing-indicator {
@@ -1174,32 +1243,7 @@ onUnmounted(() => {
   gap: 8px;
 }
 
-.dos-dots {
-  display: flex;
-  gap: 1px;
-}
 
-.dos-dots span {
-  color: #c0c0c0;
-  animation: dos-blink 1.2s infinite both;
-}
-
-.dos-dots span:nth-child(2) {
-  animation-delay: 0.2s;
-}
-
-.dos-dots span:nth-child(3) {
-  animation-delay: 0.4s;
-}
-
-@keyframes dos-blink {
-  0%, 80%, 100% {
-    opacity: 0;
-  }
-  40% {
-    opacity: 1;
-  }
-}
 
 @keyframes dot-blink {
   0%, 80%, 100% {
