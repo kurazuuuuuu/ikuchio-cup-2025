@@ -13,7 +13,7 @@
         </div>
         <div class="controls">
           <div class="timer">{{ timeLeft }}</div>
-          <button @click="logout" class="logout-btn">EXIT</button>
+          <button @click="logout" class="logout-btn">Logout</button>
         </div>
       </div>
       
@@ -369,8 +369,9 @@ const updateTimer = () => {
     if (timerInterval) {
       clearInterval(timerInterval)
     }
-    // 定時リセット時にページをリロード
-    setTimeout(() => {
+    // 定時リセット時にユーザーデータを更新してからリロード
+    setTimeout(async () => {
+      await refreshUserData()
       window.location.reload()
     }, 1000)
   }
