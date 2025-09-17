@@ -140,7 +140,7 @@ gcloud builds submit --config cloudbuild.yaml .
 ## 現在のインフラ構成
 
 ### GKEクラスター
-- **クラスター名**: ikuchio-cluster
+- **クラスター名**: autopilot-cluster-1 (GKE Autopilot)
 - **リージョン**: asia-northeast1
 - **ノードタイプ**: e2-medium
 - **ノード数**: 1-3 (自動スケーリング)
