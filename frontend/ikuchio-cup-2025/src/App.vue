@@ -109,9 +109,9 @@ const getApiBase = () => {
   if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
     return 'http://localhost:8000'
   }
-  // GKE LoadBalancer IP を使用
-  if (hostname === 'ikuchio-cup-2025-vrcat.com' || hostname.includes('ikuchio-cup-2025-vrcat.com')) {
-    return 'https://api.ikuchio-cup-2025-vrcat.com'
+  // Cloudflare ドメイン経由
+  if (hostname === 'krz-tech.net' || hostname.includes('krz-tech.net')) {
+    return 'https://api-ikuchio-cup-2025.krz-tech.net'
   }
   // フォールバック: LoadBalancer IP
   return 'http://34.146.255.229:8000'
@@ -310,9 +310,9 @@ const connectWebSocket = () => {
     if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
       return `ws://localhost:8000/ws/${roomId.value}`
     }
-    // GKE ドメイン経由
-    if (hostname === 'ikuchio-cup-2025-vrcat.com' || hostname.includes('ikuchio-cup-2025-vrcat.com')) {
-      return `wss://api.ikuchio-cup-2025-vrcat.com/ws/${roomId.value}`
+    // Cloudflare ドメイン経由
+    if (hostname === 'krz-tech.net' || hostname.includes('krz-tech.net')) {
+      return `wss://api-ikuchio-cup-2025.krz-tech.net/ws/${roomId.value}`
     }
     // フォールバック: LoadBalancer IP
     return `ws://34.146.255.229:8000/ws/${roomId.value}`

@@ -9,7 +9,7 @@ metadata:
 spec:
   ingressClassName: "gce"
   rules:
-  - host: ikuchio-cup-2025-vrcat.com
+  - host: krz-tech.net
     http:
       paths:
       - path: /*
@@ -19,7 +19,7 @@ spec:
             name: ikuchio-frontend-service
             port:
               number: 80
-  - host: api.ikuchio-cup-2025-vrcat.com
+  - host: api-ikuchio-cup-2025.krz-tech.net
     http:
       paths:
       - path: /*

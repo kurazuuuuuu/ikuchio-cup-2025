@@ -133,9 +133,9 @@ gcloud builds submit --config cloudbuild.yaml .
 ```
 
 ### 現在のアクセスURL
-- **フロントエンド**: http://35.187.202.58
-- **バックエンド**: http://35.243.125.105:8000
-- **DNS反映後**: https://ikuchio-cup-2025-vrcat.com
+- **フロントエンド**: http://35.243.125.105
+- **バックエンド**: http://34.146.255.229:8000
+- **DNS反映後**: https://krz-tech.net
 
 ## 現在のインフラ構成
 
