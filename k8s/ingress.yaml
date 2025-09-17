@@ -5,6 +5,7 @@ metadata:
   namespace: ikuchio-cup-2025
   annotations:
     kubernetes.io/ingress.global-static-ip-name: "ikuchio-ip"
+    networking.gke.io/managed-certificates: "ikuchio-ssl-cert"
 spec:
   ingressClassName: "gce"
   rules:
