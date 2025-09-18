@@ -166,6 +166,13 @@ let binaryInterval: number | null = null
 let redModeTimeout: number | null = null
 let messageSyncInterval: number | null = null
 
+// ページ離脱時のWebSocketクリーンアップ
+window.addEventListener('beforeunload', () => {
+  if (websocket) {
+    websocket.close()
+  }
+})
+
 const login = async () => {
   if (loggingIn.value) return
   
@@ -260,6 +267,11 @@ const refreshUserData = async () => {
         
         if (userData.room_id && userData.room_id !== oldRoomId) {
           stopMatchingCheck()
+          // 旧いWebSocketをクリーンアップしてから新しいルームに接続
+          if (websocket) {
+            websocket.close()
+            websocket = null
+          }
           connectWebSocket()
           startMessageSync()
         }
@@ -405,6 +417,12 @@ const checkIfSoloRoom = async () => {
 const connectWebSocket = () => {
   if (!roomId.value) return
   
+  // 既存のWebSocketをクリーンアップ
+  if (websocket) {
+    websocket.close()
+    websocket = null
+  }
+  
   // WebSocket URLも環境に応じて切り替え
   const getWsUrl = () => {
     const hostname = window.location.hostname
@@ -420,16 +438,17 @@ const connectWebSocket = () => {
   }
   
   const wsUrl = getWsUrl()
+  console.log(`Connecting to WebSocket: ${wsUrl}`)
   
   websocket = new WebSocket(wsUrl)
   
   websocket.onopen = () => {
-    console.log('WebSocket connected')
+    console.log(`WebSocket connected to room: ${roomId.value}`)
     fetchMessages()
   }
   
   websocket.onmessage = async (event) => {
-    console.log('WebSocket message received:', event.data)
+    console.log(`WebSocket message received in room ${roomId.value}:`, event.data)
     
     // WebSocket受信時に即座にエンドポイントから取得
     console.log('Fetching latest messages from endpoint')
@@ -442,17 +461,19 @@ const connectWebSocket = () => {
     }, 1000)
   }
   
-  websocket.onclose = () => {
-    console.log('WebSocket disconnected')
+  websocket.onclose = (event) => {
+    console.log(`WebSocket disconnected from room ${roomId.value}. Code: ${event.code}, Reason: ${event.reason}`)
+    // ルームIDが変わっていない場合のみ再接続
     setTimeout(() => {
-      if (roomId.value) {
+      if (roomId.value && websocket?.readyState !== WebSocket.OPEN) {
+        console.log(`Attempting to reconnect to room: ${roomId.value}`)
         connectWebSocket()
       }
     }, 3000)
   }
   
   websocket.onerror = (error) => {
-    console.error('WebSocket error:', error)
+    console.error(`WebSocket error in room ${roomId.value}:`, error)
   }
 }
 
