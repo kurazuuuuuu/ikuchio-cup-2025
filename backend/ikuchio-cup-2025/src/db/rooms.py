@@ -65,7 +65,7 @@ def firestore_get_all_rooms():
     
     return [doc.to_dict() for doc in docs if doc.to_dict()]
 
-def firestore_send_message(room_id: str, sender_id: str, original_text: str):
+async def firestore_send_message(room_id: str, sender_id: str, original_text: str):
     print(f"[Message Debug] Starting message processing for room {room_id}")
     print(f"[Message Debug] Original text: {original_text}")
     
@@ -74,7 +74,7 @@ def firestore_send_message(room_id: str, sender_id: str, original_text: str):
     # AIによるテキスト処理
     try:
         print(f"[Message Debug] Calling Gemini AI for processing...")
-        processed_text = generate(original_text)
+        processed_text = await generate(original_text)
         print(f"[Message Debug] Gemini processing completed")
         print(f"[Message Debug] Processed text: {processed_text}")
     except Exception as e:

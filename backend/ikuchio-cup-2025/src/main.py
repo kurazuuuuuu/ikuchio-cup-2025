@@ -7,7 +7,7 @@ import os
 import asyncio
 from contextlib import asynccontextmanager
 from starlette.websockets import WebSocketState
-from websocket_manager import websocket_manager
+# from websocket_manager import websocket_manager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -18,7 +18,7 @@ async def lifespan(app: FastAPI):
     asyncio.create_task(room_scheduler.start())
     
     # Redis Pub/Sub購読を開始
-    await websocket_manager.start_subscriber()
+    # await websocket_manager.start_subscriber()
     
     yield
     
@@ -161,27 +161,39 @@ def test_secret_manager():
         return error_info
 
 
+# WebSocket接続管理
+active_connections = {}
+
 @app.websocket("/ws/{room_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str):
-    await websocket_manager.connect(websocket, room_id)
+    await websocket.accept()
+    
+    if room_id not in active_connections:
+        active_connections[room_id] = []
+    active_connections[room_id].append(websocket)
     
     try:
         while True:
             data = await websocket.receive_text()
             print(f"[WebSocket] Received message in room {room_id}: {data}")
             
-            # Redis Pub/Subで全Podに配信
-            try:
-                message_data = json.loads(data)
-                websocket_manager.publish_message(room_id, message_data)
-            except json.JSONDecodeError:
-                # JSONでない場合はそのまま転送
-                websocket_manager.publish_message(room_id, {"type": "message", "data": data})
+            # 同じルームの他の接続にメッセージを送信
+            for connection in active_connections[room_id]:
+                if connection != websocket:
+                    try:
+                        await connection.send_text(data)
+                    except:
+                        pass
                 
     except (WebSocketDisconnect, Exception) as e:
         print(f"[WebSocket] Client disconnected from room {room_id}: {e}")
     finally:
-        websocket_manager.disconnect(websocket, room_id)
+        try:
+            active_connections[room_id].remove(websocket)
+            if not active_connections[room_id]:
+                del active_connections[room_id]
+        except (ValueError, KeyError):
+            pass
 
 try:
     import os
