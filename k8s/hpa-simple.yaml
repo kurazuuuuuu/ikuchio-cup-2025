@@ -9,20 +9,20 @@ spec:
     kind: Deployment
     name: ikuchio-backend
   minReplicas: 1
-  maxReplicas: 100
+  maxReplicas: 3
   metrics:
   - type: Resource
     resource:
       name: cpu
       target:
         type: Utilization
-        averageUtilization: 50
+        averageUtilization: 80
   - type: Resource
     resource:
       name: memory
       target:
         type: Utilization
-        averageUtilization: 60
+        averageUtilization: 80
   behavior:
     scaleDown:
       stabilizationWindowSeconds: 300
@@ -48,20 +48,20 @@ spec:
     kind: Deployment
     name: ikuchio-frontend
   minReplicas: 1
-  maxReplicas: 50
+  maxReplicas: 2
   metrics:
   - type: Resource
     resource:
       name: cpu
       target:
         type: Utilization
-        averageUtilization: 50
+        averageUtilization: 80
   - type: Resource
     resource:
       name: memory
       target:
         type: Utilization
-        averageUtilization: 60
+        averageUtilization: 80
   behavior:
     scaleDown:
       stabilizationWindowSeconds: 300
