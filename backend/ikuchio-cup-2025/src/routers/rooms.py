@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 import uvicorn
+import asyncio
 
 from db.rooms import firestore_get_room, firestore_get_all_rooms, firestore_reset_all_rooms, create_room_with_random_users, firestore_send_message, firestore_get_messages
 from pydantic import BaseModel
@@ -58,6 +59,24 @@ async def send_message(room_id: str, message_data: MessageCreate):
     try:
         result = firestore_send_message(room_id, message_data.sender_id, message_data.original_text)
         print(f"[Router Debug] Message sent successfully")
+        
+        # WebSocketで他のクライアントに通知
+        from main import active_connections
+        import json
+        if room_id in active_connections:
+            notification = json.dumps({
+                "type": "new_message",
+                "room_id": room_id,
+                "message_id": result.get("id", "")
+            })
+            
+            for connection in active_connections[room_id]:
+                try:
+                    await connection.send_text(notification)
+                    print(f"[Router Debug] Notification sent via WebSocket")
+                except Exception as ws_error:
+                    print(f"[Router Debug] WebSocket notification failed: {ws_error}")
+        
         return result
     except Exception as e:
         print(f"[Router Debug] Error sending message: {str(e)}")
@@ -67,6 +86,23 @@ async def send_message(room_id: str, message_data: MessageCreate):
 async def send_message_plural(room_id: str, message_data: MessageCreate):
     try:
         result = firestore_send_message(room_id, message_data.sender_id, message_data.original_text)
+        
+        # WebSocketで他のクライアントに通知
+        from main import active_connections
+        import json
+        if room_id in active_connections:
+            notification = json.dumps({
+                "type": "new_message",
+                "room_id": room_id,
+                "message_id": result.get("id", "")
+            })
+            
+            for connection in active_connections[room_id]:
+                try:
+                    await connection.send_text(notification)
+                except Exception as ws_error:
+                    print(f"[Router Debug] WebSocket notification failed: {ws_error}")
+        
         return result
     except Exception as e:
         return {"error": f"Failed to send message: {str(e)}"}

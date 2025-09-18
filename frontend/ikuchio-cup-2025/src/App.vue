@@ -328,10 +328,7 @@ const sendMessage = async () => {
     
     newMessage.value = ''
     
-    if (websocket && websocket.readyState === WebSocket.OPEN) {
-      const wsMessage = JSON.stringify({ type: 'message', text: messageText })
-      websocket.send(wsMessage)
-    }
+    // メッセージ送信後はWebSocket通知はサーバー側で処理される
     
     await fetchMessages()
   } catch (error) {
@@ -406,19 +403,42 @@ const connectWebSocket = () => {
   websocket = new WebSocket(wsUrl)
   
   websocket.onopen = () => {
+    console.log('WebSocket connected')
     fetchMessages()
   }
   
-  websocket.onmessage = () => {
-    fetchMessages()
+  websocket.onmessage = (event) => {
+    console.log('WebSocket message received:', event.data)
+    try {
+      const data = JSON.parse(event.data)
+      if (data.type === 'new_message') {
+        // 新しいメッセージの通知を受け取った場合
+        console.log('New message notification received')
+        // AI処理完了を待つために遅延を入れる
+        setTimeout(() => {
+          fetchMessages()
+        }, 2000)
+      }
+    } catch (e) {
+      // JSONパースに失敗した場合は従来通りの処理
+      console.log('Non-JSON WebSocket message, fetching messages')
+      setTimeout(() => {
+        fetchMessages()
+      }, 1000)
+    }
   }
   
   websocket.onclose = () => {
+    console.log('WebSocket disconnected')
     setTimeout(() => {
       if (roomId.value) {
         connectWebSocket()
       }
     }, 3000)
+  }
+  
+  websocket.onerror = (error) => {
+    console.error('WebSocket error:', error)
   }
 }
 

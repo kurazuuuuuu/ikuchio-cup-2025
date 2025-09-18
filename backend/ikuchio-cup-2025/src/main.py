@@ -162,28 +162,46 @@ active_connections = {}
 
 @app.websocket("/ws/{room_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str):
-    # CORSヘッダーを設定して接続を許可
     await websocket.accept()
     
     if room_id not in active_connections:
         active_connections[room_id] = []
     active_connections[room_id].append(websocket)
     
+    print(f"[WebSocket] Client connected to room {room_id}. Total connections: {len(active_connections[room_id])}")
+    
     try:
         while True:
             data = await websocket.receive_text()
+            print(f"[WebSocket] Received message in room {room_id}: {data}")
+            
             # 同じルームの他の接続にメッセージを送信
+            message_sent = False
             for connection in active_connections[room_id]:
-                if connection != websocket:
+                if connection != websocket and connection.client_state == WebSocketState.CONNECTED:
                     try:
                         await connection.send_text(data)
-                    except:
-                        pass
-    except (WebSocketDisconnect, Exception):
+                        message_sent = True
+                        print(f"[WebSocket] Message forwarded to another client in room {room_id}")
+                    except Exception as e:
+                        print(f"[WebSocket] Failed to send message: {e}")
+                        # 接続が無効な場合はリストから削除
+                        try:
+                            active_connections[room_id].remove(connection)
+                        except ValueError:
+                            pass
+            
+            if not message_sent:
+                print(f"[WebSocket] No other clients in room {room_id} to forward message to")
+                
+    except (WebSocketDisconnect, Exception) as e:
+        print(f"[WebSocket] Client disconnected from room {room_id}: {e}")
+    finally:
         try:
             active_connections[room_id].remove(websocket)
             if not active_connections[room_id]:
                 del active_connections[room_id]
+            print(f"[WebSocket] Client removed from room {room_id}")
         except (ValueError, KeyError):
             pass
 
