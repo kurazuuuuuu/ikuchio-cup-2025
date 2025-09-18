@@ -34,7 +34,7 @@ def get_api_key():
         print("[Gemini Debug] API key is in fallback state, not retrying")
     return API_KEY
 
-def generate(input_text):
+async def generate(input_text):
   api_key = get_api_key()
   if api_key == "fallback":
     print("[Gemini Debug] Using fallback - returning original text")
@@ -116,15 +116,24 @@ def generate(input_text):
   )
 
   try:
-    response = client.models.generate_content(
-      model = model,
-      contents = contents,
-      config = generate_content_config,
+    import asyncio
+    # 30秒のタイムアウトを設定
+    response = await asyncio.wait_for(
+      asyncio.to_thread(
+        client.models.generate_content,
+        model=model,
+        contents=contents,
+        config=generate_content_config
+      ),
+      timeout=30.0
     )
     
     response_text = response.text if response.text else ""
     print(f"[Gemini Debug] Generated response: {response_text[:100]}...")
     return response_text if response_text.strip() else input_text
+  except asyncio.TimeoutError:
+    print(f"[Gemini Debug] Generation timed out after 30 seconds")
+    return input_text
   except Exception as e:
     print(f"[Gemini Debug] Generation failed: {str(e)}")
     return input_text

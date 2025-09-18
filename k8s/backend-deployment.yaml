@@ -4,7 +4,7 @@ metadata:
   name: ikuchio-backend
   namespace: ikuchio-cup-2025
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: ikuchio-backend
@@ -40,6 +40,8 @@ spec:
             secretKeyRef:
               name: google-vertexai-api-key
               key: key
+        - name: REDIS_URL
+          value: "redis://redis-service:6379"
         readinessProbe:
           httpGet:
             path: /health

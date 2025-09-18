@@ -164,6 +164,14 @@ let websocket: WebSocket | null = null
 let matchingInterval: number | null = null
 let binaryInterval: number | null = null
 let redModeTimeout: number | null = null
+let messageSyncInterval: number | null = null
+
+// ページ離脱時のWebSocketクリーンアップ
+window.addEventListener('beforeunload', () => {
+  if (websocket) {
+    websocket.close()
+  }
+})
 
 const login = async () => {
   if (loggingIn.value) return
@@ -205,6 +213,7 @@ const login = async () => {
     
     if (userData.room_id) {
       connectWebSocket()
+      startMessageSync()
     } else {
       // ルーム未参加の場合、定期的にマッチング状況をチェック
       startMatchingCheck()
@@ -258,7 +267,13 @@ const refreshUserData = async () => {
         
         if (userData.room_id && userData.room_id !== oldRoomId) {
           stopMatchingCheck()
+          // 旧いWebSocketをクリーンアップしてから新しいルームに接続
+          if (websocket) {
+            websocket.close()
+            websocket = null
+          }
           connectWebSocket()
+          startMessageSync()
         }
       }
     }
@@ -279,6 +294,25 @@ const stopMatchingCheck = () => {
     clearInterval(matchingInterval)
     matchingInterval = null
     console.log('Debug: Stopped matching check interval')
+  }
+}
+
+const startMessageSync = () => {
+  if (messageSyncInterval) return
+  
+  console.log('Debug: Starting message sync interval')
+  messageSyncInterval = setInterval(() => {
+    if (roomId.value) {
+      fetchMessages()
+    }
+  }, 15000) // 15秒ごとにメッセージを同期（フォールバック）
+}
+
+const stopMessageSync = () => {
+  if (messageSyncInterval) {
+    clearInterval(messageSyncInterval)
+    messageSyncInterval = null
+    console.log('Debug: Stopped message sync interval')
   }
 }
 
@@ -328,11 +362,7 @@ const sendMessage = async () => {
     
     newMessage.value = ''
     
-    if (websocket && websocket.readyState === WebSocket.OPEN) {
-      const wsMessage = JSON.stringify({ type: 'message', text: messageText })
-      websocket.send(wsMessage)
-    }
-    
+    // 自分のメッセージを即座に表示するために取得
     await fetchMessages()
   } catch (error) {
     console.error('Send failed:', error)
@@ -387,6 +417,12 @@ const checkIfSoloRoom = async () => {
 const connectWebSocket = () => {
   if (!roomId.value) return
   
+  // 既存のWebSocketをクリーンアップ
+  if (websocket) {
+    websocket.close()
+    websocket = null
+  }
+  
   // WebSocket URLも環境に応じて切り替え
   const getWsUrl = () => {
     const hostname = window.location.hostname
@@ -402,23 +438,42 @@ const connectWebSocket = () => {
   }
   
   const wsUrl = getWsUrl()
+  console.log(`Connecting to WebSocket: ${wsUrl}`)
   
   websocket = new WebSocket(wsUrl)
   
   websocket.onopen = () => {
+    console.log(`WebSocket connected to room: ${roomId.value}`)
     fetchMessages()
   }
   
-  websocket.onmessage = () => {
-    fetchMessages()
+  websocket.onmessage = async (event) => {
+    console.log(`WebSocket message received in room ${roomId.value}:`, event.data)
+    
+    // WebSocket受信時に即座にエンドポイントから取得
+    console.log('Fetching latest messages from endpoint')
+    await fetchMessages()
+    
+    // 念のために少し遅延して再取得
+    setTimeout(async () => {
+      console.log('Retry fetching messages after delay')
+      await fetchMessages()
+    }, 1000)
   }
   
-  websocket.onclose = () => {
+  websocket.onclose = (event) => {
+    console.log(`WebSocket disconnected from room ${roomId.value}. Code: ${event.code}, Reason: ${event.reason}`)
+    // ルームIDが変わっていない場合のみ再接続
     setTimeout(() => {
-      if (roomId.value) {
+      if (roomId.value && websocket?.readyState !== WebSocket.OPEN) {
+        console.log(`Attempting to reconnect to room: ${roomId.value}`)
         connectWebSocket()
       }
     }, 3000)
+  }
+  
+  websocket.onerror = (error) => {
+    console.error(`WebSocket error in room ${roomId.value}:`, error)
   }
 }
 

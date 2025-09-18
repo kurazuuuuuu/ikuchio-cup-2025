@@ -12,7 +12,7 @@ COPY src/ ./src/
 WORKDIR /app/src
 
 # Install dependencies directly with pip
-RUN pip install --no-cache-dir fastapi[standard] uvicorn google-cloud-firestore google-cloud-secret-manager google-genai firebase-admin==6.5.0
+RUN pip install --no-cache-dir fastapi[standard] uvicorn google-cloud-firestore google-cloud-secret-manager google-genai firebase-admin==6.5.0 redis>=5.0.0
 
 # Verify firebase-admin installation
 RUN python -c "import firebase_admin; print('Firebase Admin SDK installed successfully')"
