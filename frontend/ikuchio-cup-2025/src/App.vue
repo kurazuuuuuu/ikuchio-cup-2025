@@ -428,25 +428,18 @@ const connectWebSocket = () => {
     fetchMessages()
   }
   
-  websocket.onmessage = (event) => {
+  websocket.onmessage = async (event) => {
     console.log('WebSocket message received:', event.data)
-    try {
-      const data = JSON.parse(event.data)
-      if (data.type === 'new_message') {
-        // 自分が送信したメッセージの場合は無視
-        if (data.sender_id === user.value?.firebase_uid) {
-          console.log('Ignoring own message notification')
-          return
-        }
-        
-        console.log('New message from other user - AI processing completed')
-        // AI処理完了後の通知なので即座に取得
-        fetchMessages()
-      }
-    } catch (e) {
-      console.log('Non-JSON WebSocket message, fetching messages')
-      fetchMessages()
-    }
+    
+    // WebSocket受信時に即座にエンドポイントから取得
+    console.log('Fetching latest messages from endpoint')
+    await fetchMessages()
+    
+    // 念のために少し遅延して再取得
+    setTimeout(async () => {
+      console.log('Retry fetching messages after delay')
+      await fetchMessages()
+    }, 1000)
   }
   
   websocket.onclose = () => {
