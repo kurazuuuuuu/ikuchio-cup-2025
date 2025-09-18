@@ -7,6 +7,7 @@ import os
 import asyncio
 from contextlib import asynccontextmanager
 from starlette.websockets import WebSocketState
+from websocket_manager import websocket_manager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -15,6 +16,9 @@ async def lifespan(app: FastAPI):
     # ルームスケジューラーを開始
     from scheduler.room_scheduler import room_scheduler
     asyncio.create_task(room_scheduler.start())
+    
+    # Redis Pub/Sub購読を開始
+    await websocket_manager.start_subscriber()
     
     yield
     
@@ -157,53 +161,27 @@ def test_secret_manager():
         return error_info
 
 
-# WebSocket接続管理
-active_connections = {}
-
 @app.websocket("/ws/{room_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str):
-    await websocket.accept()
-    
-    if room_id not in active_connections:
-        active_connections[room_id] = []
-    active_connections[room_id].append(websocket)
-    
-    print(f"[WebSocket] Client connected to room {room_id}. Total connections: {len(active_connections[room_id])}")
+    await websocket_manager.connect(websocket, room_id)
     
     try:
         while True:
             data = await websocket.receive_text()
             print(f"[WebSocket] Received message in room {room_id}: {data}")
             
-            # 同じルームの他の接続にメッセージを送信
-            message_sent = False
-            for connection in active_connections[room_id]:
-                if connection != websocket and connection.client_state == WebSocketState.CONNECTED:
-                    try:
-                        await connection.send_text(data)
-                        message_sent = True
-                        print(f"[WebSocket] Message forwarded to another client in room {room_id}")
-                    except Exception as e:
-                        print(f"[WebSocket] Failed to send message: {e}")
-                        # 接続が無効な場合はリストから削除
-                        try:
-                            active_connections[room_id].remove(connection)
-                        except ValueError:
-                            pass
-            
-            if not message_sent:
-                print(f"[WebSocket] No other clients in room {room_id} to forward message to")
+            # Redis Pub/Subで全Podに配信
+            try:
+                message_data = json.loads(data)
+                websocket_manager.publish_message(room_id, message_data)
+            except json.JSONDecodeError:
+                # JSONでない場合はそのまま転送
+                websocket_manager.publish_message(room_id, {"type": "message", "data": data})
                 
     except (WebSocketDisconnect, Exception) as e:
         print(f"[WebSocket] Client disconnected from room {room_id}: {e}")
     finally:
-        try:
-            active_connections[room_id].remove(websocket)
-            if not active_connections[room_id]:
-                del active_connections[room_id]
-            print(f"[WebSocket] Client removed from room {room_id}")
-        except (ValueError, KeyError):
-            pass
+        websocket_manager.disconnect(websocket, room_id)
 
 try:
     import os

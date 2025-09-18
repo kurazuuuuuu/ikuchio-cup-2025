@@ -60,22 +60,15 @@ async def send_message(room_id: str, message_data: MessageCreate):
         result = firestore_send_message(room_id, message_data.sender_id, message_data.original_text)
         print(f"[Router Debug] Message sent successfully")
         
-        # WebSocketで他のクライアントに通知
-        from main import active_connections
-        import json
-        if room_id in active_connections:
-            notification = json.dumps({
-                "type": "new_message",
-                "room_id": room_id,
-                "message_id": result.get("id", "")
-            })
-            
-            for connection in active_connections[room_id]:
-                try:
-                    await connection.send_text(notification)
-                    print(f"[Router Debug] Notification sent via WebSocket")
-                except Exception as ws_error:
-                    print(f"[Router Debug] WebSocket notification failed: {ws_error}")
+        # Redis Pub/Subで全Podに通知
+        from websocket_manager import websocket_manager
+        notification = {
+            "type": "new_message",
+            "room_id": room_id,
+            "message_id": result.get("id", "")
+        }
+        websocket_manager.publish_message(room_id, notification)
+        print(f"[Router Debug] Notification published via Redis")
         
         return result
     except Exception as e:
@@ -87,21 +80,14 @@ async def send_message_plural(room_id: str, message_data: MessageCreate):
     try:
         result = firestore_send_message(room_id, message_data.sender_id, message_data.original_text)
         
-        # WebSocketで他のクライアントに通知
-        from main import active_connections
-        import json
-        if room_id in active_connections:
-            notification = json.dumps({
-                "type": "new_message",
-                "room_id": room_id,
-                "message_id": result.get("id", "")
-            })
-            
-            for connection in active_connections[room_id]:
-                try:
-                    await connection.send_text(notification)
-                except Exception as ws_error:
-                    print(f"[Router Debug] WebSocket notification failed: {ws_error}")
+        # Redis Pub/Subで全Podに通知
+        from websocket_manager import websocket_manager
+        notification = {
+            "type": "new_message",
+            "room_id": room_id,
+            "message_id": result.get("id", "")
+        }
+        websocket_manager.publish_message(room_id, notification)
         
         return result
     except Exception as e:

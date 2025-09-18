@@ -26,6 +26,8 @@ spec:
             secretKeyRef:
               name: google-vertexai-api-key
               key: key
+        - name: REDIS_URL
+          value: "redis://redis-service:6379"
         resources:
           requests:
             cpu: 200m
