@@ -57,18 +57,20 @@ async def send_message(room_id: str, message_data: MessageCreate):
     print(f"[Router Debug] Received message request for room {room_id}")
     print(f"[Router Debug] Message data: {message_data.original_text}")
     try:
+        # AI処理を含むメッセージ送信処理
         result = await firestore_send_message(room_id, message_data.sender_id, message_data.original_text)
-        print(f"[Router Debug] Message sent successfully")
+        print(f"[Router Debug] Message and AI processing completed")
         
-        # Redis Pub/Subで全Podに通知
+        # AI処理完了後にRedis Pub/Subで全Podに通知
         from websocket_manager import websocket_manager
         notification = {
             "type": "new_message",
             "room_id": room_id,
-            "message_id": result.get("id", "")
+            "message_id": result.get("id", ""),
+            "sender_id": message_data.sender_id
         }
         websocket_manager.publish_message(room_id, notification)
-        print(f"[Router Debug] Notification published via Redis")
+        print(f"[Router Debug] Notification published after AI processing")
         
         return result
     except Exception as e:
@@ -78,14 +80,16 @@ async def send_message(room_id: str, message_data: MessageCreate):
 @rooms_router.post("/api/rooms/{room_id}")
 async def send_message_plural(room_id: str, message_data: MessageCreate):
     try:
+        # AI処理を含むメッセージ送信処理
         result = await firestore_send_message(room_id, message_data.sender_id, message_data.original_text)
         
-        # Redis Pub/Subで全Podに通知
+        # AI処理完了後にRedis Pub/Subで全Podに通知
         from websocket_manager import websocket_manager
         notification = {
             "type": "new_message",
             "room_id": room_id,
-            "message_id": result.get("id", "")
+            "message_id": result.get("id", ""),
+            "sender_id": message_data.sender_id
         }
         websocket_manager.publish_message(room_id, notification)
         

@@ -164,6 +164,7 @@ let websocket: WebSocket | null = null
 let matchingInterval: number | null = null
 let binaryInterval: number | null = null
 let redModeTimeout: number | null = null
+let messageSyncInterval: number | null = null
 
 const login = async () => {
   if (loggingIn.value) return
@@ -205,6 +206,7 @@ const login = async () => {
     
     if (userData.room_id) {
       connectWebSocket()
+      startMessageSync()
     } else {
       // ルーム未参加の場合、定期的にマッチング状況をチェック
       startMatchingCheck()
@@ -259,6 +261,7 @@ const refreshUserData = async () => {
         if (userData.room_id && userData.room_id !== oldRoomId) {
           stopMatchingCheck()
           connectWebSocket()
+          startMessageSync()
         }
       }
     }
@@ -279,6 +282,25 @@ const stopMatchingCheck = () => {
     clearInterval(matchingInterval)
     matchingInterval = null
     console.log('Debug: Stopped matching check interval')
+  }
+}
+
+const startMessageSync = () => {
+  if (messageSyncInterval) return
+  
+  console.log('Debug: Starting message sync interval')
+  messageSyncInterval = setInterval(() => {
+    if (roomId.value) {
+      fetchMessages()
+    }
+  }, 15000) // 15秒ごとにメッセージを同期（フォールバック）
+}
+
+const stopMessageSync = () => {
+  if (messageSyncInterval) {
+    clearInterval(messageSyncInterval)
+    messageSyncInterval = null
+    console.log('Debug: Stopped message sync interval')
   }
 }
 
@@ -328,8 +350,7 @@ const sendMessage = async () => {
     
     newMessage.value = ''
     
-    // メッセージ送信後はWebSocket通知はサーバー側で処理される
-    
+    // 自分のメッセージを即座に表示するために取得
     await fetchMessages()
   } catch (error) {
     console.error('Send failed:', error)
@@ -412,19 +433,19 @@ const connectWebSocket = () => {
     try {
       const data = JSON.parse(event.data)
       if (data.type === 'new_message') {
-        // 新しいメッセージの通知を受け取った場合
-        console.log('New message notification received')
-        // AI処理完了を待つために遅延を入れる
-        setTimeout(() => {
-          fetchMessages()
-        }, 2000)
+        // 自分が送信したメッセージの場合は無視
+        if (data.sender_id === user.value?.firebase_uid) {
+          console.log('Ignoring own message notification')
+          return
+        }
+        
+        console.log('New message from other user - AI processing completed')
+        // AI処理完了後の通知なので即座に取得
+        fetchMessages()
       }
     } catch (e) {
-      // JSONパースに失敗した場合は従来通りの処理
       console.log('Non-JSON WebSocket message, fetching messages')
-      setTimeout(() => {
-        fetchMessages()
-      }, 1000)
+      fetchMessages()
     }
   }
   
